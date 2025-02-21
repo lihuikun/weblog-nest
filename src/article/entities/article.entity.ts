@@ -4,46 +4,41 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Comment } from '../../comment/entities/comment.entity';
+import { Like } from '../../like/entities/like.entity';
+import { Favorite } from '../../favorite/entities/favorite.entity';
 
 @Entity()
 export class Article {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  user_id: string;
-
-  @Column()
-  article_status: number;
-
-  @CreateDateColumn()
-  publish_date: number;
-
-  @UpdateDateColumn()
-  last_modify_date: number;
-
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
-  @Column('text')
+  @Column({ type: 'text' })
   content: string;
 
-  @Column()
-  category_id: string;
+  @Column({ type: 'int', default: 0 })
+  viewCount: number;
 
-  @Column()
-  publish_ip: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  coverImage?: string;
 
-  @Column()
-  last_modify_ip: string;
+  @OneToMany(() => Comment, (comment) => comment.article, { cascade: true })
+  comments: Comment[];
 
-  @Column()
-  category_name: string;
+  @OneToMany(() => Like, (like) => like.article, { cascade: true })
+  likes: Like[];
 
-  @Column()
-  like_count: number;
+  @OneToMany(() => Favorite, (favorite) => favorite.article, { cascade: true })
+  favorites: Favorite[];
 
-  @Column()
-  view_count: number;
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }

@@ -8,11 +8,11 @@ import {
 import { Article } from '../../article/entities/article.entity';
 
 @Entity()
-export class Favorite {
+export class Like {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Article, (article) => article.favorites)
+  @ManyToOne(() => Article, (article) => article.likes)
   article: Article;
 
   @CreateDateColumn({ type: 'timestamp' })

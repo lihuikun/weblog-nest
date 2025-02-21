@@ -7,12 +7,14 @@ import {
   Delete,
   Put,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
-import { Article } from './entities/article.entity';
-import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
+import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Article } from './entities/article.entity';
+
 @Controller('articles')
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
@@ -20,45 +22,48 @@ export class ArticleController {
   @Get()
   @ApiOperation({ summary: '获取文章列表' })
   async getArticles(
-    @Query('pageIndex') pageIndex: number = 1,
+    @Query('pageIndex') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
   ) {
-    return this.articleService.getArticles(pageIndex, pageSize);
+    return this.articleService.findAll(page, pageSize);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '获取单篇文章' })
   async getArticleById(@Param('id') id: number) {
-    return this.articleService.getArticleById(id);
+    return this.articleService.findOne(id);
   }
 
-  @Post()
-  @ApiOperation({ summary: '创建文章' })
-  @ApiBody({
-    description: '文章的详细数据，包括标题、内容、分类等',
-    type: CreateArticleDto,
-  })
-  async createArticle(@Body() articleData: Partial<Article>) {
-    return this.articleService.createArticle(articleData);
-  }
-
-  // 更新文章
-  @Put(':id')
+  @Put(':id') // 使用 PUT 方法表示更新操作
   @ApiOperation({ summary: '更新文章' })
   @ApiBody({
-    description: '文章的详细数据，包括标题、内容、分类等',
+    description: '文章的详细数据，包括标题、内容、封面等',
     type: UpdateArticleDto,
   })
+  @ApiParam({
+    name: 'id',
+    description: '文章的唯一标识符',
+  })
   async updateArticle(
-    @Param('id') id: number,
-    @Body() articleData: Partial<Article>,
-  ) {
-    return this.articleService.updateArticle(id, articleData);
+    @Param('id', ParseIntPipe) id: number, // 确保 id 是数字类型
+    @Body() articleData: UpdateArticleDto,
+  ): Promise<Article> {
+    return this.articleService.update(id, articleData);
   }
 
-  // 删除文章
+  @Post() // 使用 POST 方法表示创建操作
+  @ApiOperation({ summary: '创建文章' })
+  @ApiBody({
+    description: '文章的详细数据，包括标题、内容、封面等',
+    type: CreateArticleDto, // 确保使用创建文章的 DTO
+  })
+  async createArticle(@Body() articleData: CreateArticleDto): Promise<Article> {
+    return this.articleService.create(articleData);
+  }
+
   @Delete(':id')
+  @ApiOperation({ summary: '删除文章' })
   async deleteArticle(@Param('id') id: number) {
-    return this.articleService.deleteArticle(id);
+    return this.articleService.delete(id);
   }
 }

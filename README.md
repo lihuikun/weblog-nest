@@ -1,4 +1,5 @@
 ### 前言
+
 由于ai帮忙生成nest项目，前期没有考虑代码的规范，每次都是问ai都要花费大量时间，给ai列了一个需求列表，作为nest的代码规范，也创建了nest的脚手架，方便后续使用，快速初始化nest项目。
 
 ### 接口编写的代码规范：
@@ -32,7 +33,9 @@ user
 ```
 
 ### swagger配置以及使用方式：
+
 （cursor之前生成jsDoc的写法，个人觉得代码量比较多，看起来比较乱，所以统一使用装饰器写法）
+
 ```
 @Get()
   @ApiOperation({ summary: '获取文章列表' })
@@ -45,6 +48,7 @@ user
 ```
 
 ### git的代码规范：
+
 Husky 是一个非常流行的工具，允许你在 Git 钩子（如 pre-commit 和 pre-push）中执行自定义命令，可以用来运行代码质量检查工具。
 
 安装 Husky：
@@ -52,12 +56,58 @@ Husky 是一个非常流行的工具，允许你在 Git 钩子（如 pre-commit 
 ```
 npm install husky --save-dev
 ```
+
 启用 Git 钩子：
+
 ```
 npx husky install
 ```
+
 配置 pre-commit 钩子： 你可以设置 pre-commit 钩子来执行代码格式化或检查，例如：
+
 ```
 npx husky add .husky/pre-commit "npm run lint"
 ```
+
 这会在每次提交之前运行 npm run lint 命令。
+
+### 全局的身份验证
+
+踩坑点：`global: true`, //开启全局注册
+
+```
+JwtModule.register({
+      global: true, //开启全局注册
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '60s' },
+    }),
+```
+
+具体代码参考：`src/auth/*.ts`
+
+typeorm性能优化
+```
+// 使用dataSource和Brackets 查询对应的评论和回复评论的层级
+// skip和take用于分页
+  async findAll(page: number = 1, pageSize: number = 10): Promise<Article[]> {
+    const skip = (page - 1) * pageSize;
+    const queryBuilder = this.dataSource
+      .createQueryBuilder()
+      .select('article')
+      .from(Article, 'article')
+      .leftJoinAndSelect('article.comments', 'comment')
+      .leftJoinAndSelect('comment.replies', 'reply')
+      .leftJoinAndSelect('article.likes', 'like')
+      .leftJoinAndSelect('article.favorites', 'favorite')
+      .where(
+        new Brackets((qb) => {
+          qb.where('comment.parentComment IS NULL'); // 只加载顶级评论
+        }),
+      )
+      .skip(skip)
+      .take(pageSize);
+
+    const articles = await queryBuilder.getMany();
+    return articles;
+  }
+```

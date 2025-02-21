@@ -1,5 +1,4 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { AuthMiddleware } from './common/middleware/auth.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { databaseConfig } from './config/database.config';
@@ -7,7 +6,11 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ArticleModule } from './article/article.module';
 import { FavoriteModule } from './favorite/favorite.module';
-
+import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from './auth/auth.module';
+import { CategoryModule } from './category/category.module';
+import { LikeModule } from './like/like.module';
+import { CommentModule } from './comment/comment.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -17,14 +20,19 @@ import { FavoriteModule } from './favorite/favorite.module';
     TypeOrmModule.forRoot({
       ...databaseConfig,
     }),
+    JwtModule.register({
+      global: true, //开启全局注册
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '60s' },
+    }),
+    AuthModule,
     ArticleModule,
     FavoriteModule,
+    CategoryModule,
+    LikeModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}

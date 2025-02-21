@@ -1,46 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsInt } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsInt,
+  Length,
+} from 'class-validator';
 
 export class CreateArticleDto {
-  @ApiProperty({
-    description: '文章标题',
-    type: String,
-  })
+  @ApiProperty({ description: '文章标题', example: '如何学习 NestJS' })
+  @IsNotEmpty()
   @IsString()
+  @Length(1, 255)
   title: string;
 
   @ApiProperty({
     description: '文章内容',
-    type: String,
+    example: '这是一个关于 NestJS 的教程...',
   })
+  @IsNotEmpty()
   @IsString()
   content: string;
 
   @ApiProperty({
-    description: '文章分类',
-    type: String,
+    description: '文章封面图 URL',
+    example: 'https://example.com/image.jpg',
+    required: false,
   })
+  @IsOptional()
   @IsString()
-  category_name: string;
-
-  @ApiProperty({
-    description: '文章发布时间，Unix 时间戳格式',
-    type: Number,
-  })
-  @IsInt()
-  publish_date: number;
-
-  @ApiProperty({
-    description: '文章最后修改时间，Unix 时间戳格式',
-    type: Number,
-  })
-  @IsInt()
-  last_modify_date: number;
-
-  @ApiProperty({
-    description: '文章状态，0 表示正常，1 表示删除',
-    type: Number,
-  })
-  @IsInt()
-  article_status: number;
+  coverImage?: string;
 }
