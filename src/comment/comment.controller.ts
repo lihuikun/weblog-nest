@@ -1,7 +1,16 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('articles/comments')
 export class CommentController {
@@ -14,8 +23,14 @@ export class CommentController {
     description: '评论的详细数据，包括内容',
     type: CreateCommentDto,
   })
-  async createComment(@Body() commentData: CreateCommentDto) {
-    return this.commentService.create(commentData);
+  @UseGuards(AuthGuard)
+  async createComment(
+    @Req() req: Request,
+    @Body() commentData: CreateCommentDto,
+  ) {
+    const userId = (req as any).user.userId;
+    console.log('🚀 ~ CommentController ~ userId:', userId);
+    return this.commentService.create(userId, commentData);
   }
 
   // 删除评论

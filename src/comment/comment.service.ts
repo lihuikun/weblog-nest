@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Req } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Comment } from './entities/comment.entity';
@@ -12,14 +12,21 @@ export class CommentService {
   ) {}
 
   // 创建顶级评论或回复
-  async create(createCommentDto: CreateCommentDto): Promise<Comment> {
+  async create(
+    userId: number,
+    createCommentDto: CreateCommentDto,
+  ): Promise<Comment> {
     const { content, parentId, articleId } = createCommentDto;
-    console.log('🚀 ~ CommentService ~ createCommentDto:', createCommentDto);
-
+    console.log(
+      '🚀 ~ CommentService ~ createCommentDto:',
+      createCommentDto,
+      userId,
+    );
     const comment = this.commentRepository.create({
       content,
       article: { id: articleId }, // 关联文章
       parentComment: parentId ? { id: parentId } : null, // 如果有 parentId，则关联父评论
+      user: { id: userId }, // 关联用户
     });
 
     return await this.commentRepository.save(comment);

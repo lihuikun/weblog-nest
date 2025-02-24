@@ -12,4 +12,8 @@ export class User {
 
   @Column({ type: 'varchar', unique: true, nullable: false })
   openId: string; // 微信用户的唯一标识
+
+  // token
+  @Column({ type: 'varchar', nullable: true })
+  token?: string;
 }

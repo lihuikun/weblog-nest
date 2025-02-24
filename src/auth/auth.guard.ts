@@ -9,7 +9,6 @@ export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const token = request.headers['authorization']?.split(' ')[1]; // 获取 Bearer token
-    console.log('🚀 ~ AuthGuard ~ canActivate ~ token:', token);
 
     if (!token) {
       return false; // 没有 token，返回 false
@@ -17,9 +16,11 @@ export class AuthGuard implements CanActivate {
 
     try {
       const decoded = this.jwtService.verify(token); // 验证 token
+      console.log('🚀 ~ AuthGuard ~ canActivate ~ decoded:', decoded);
       request.user = decoded; // 在请求中添加用户信息
       return true; // 验证成功
     } catch (e) {
+      console.log('🚀 ~ AuthGuard ~ canActivate ~ e:', e);
       return false; // 验证失败
     }
   }

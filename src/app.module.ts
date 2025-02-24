@@ -24,7 +24,7 @@ import { UserModule } from './user/user.module';
     JwtModule.register({
       global: true, //开启全局注册
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '60s' },
+      signOptions: { expiresIn: '24h' },
     }),
     AuthModule,
     ArticleModule,
