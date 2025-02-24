@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
 import { LikeModule } from './like/like.module';
 import { CommentModule } from './comment/comment.module';
+import { UserModule } from './user/user.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -31,6 +32,7 @@ import { CommentModule } from './comment/comment.module';
     CategoryModule,
     LikeModule,
     CommentModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
