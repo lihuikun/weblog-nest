@@ -1,34 +1,34 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { LikeService } from './like.service';
 import { CreateLikeDto } from './dto/create-like.dto';
 import { UpdateLikeDto } from './dto/update-like.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('like')
 export class LikeController {
   constructor(private readonly likeService: LikeService) {}
 
   @Post()
-  create(@Body() createLikeDto: CreateLikeDto) {
-    return this.likeService.create(createLikeDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.likeService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.likeService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateLikeDto: UpdateLikeDto) {
-    return this.likeService.update(+id, updateLikeDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.likeService.remove(+id);
+  @UseGuards(AuthGuard)
+  create(
+    @Req()
+    req: {
+      user: { userId: number };
+    },
+    @Body() createLikeDto: CreateLikeDto,
+  ) {
+    const userId = req.user.userId;
+    console.log('🚀 ~ LikeController ~ userId:', userId);
+    return this.likeService.toggleLike(userId, createLikeDto.articleId);
   }
 }

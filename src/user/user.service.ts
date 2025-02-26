@@ -22,15 +22,14 @@ export class UserService {
     const response = await axios.get(
       `https://api.weixin.qq.com/sns/jscode2session?appid=${process.env.WECHAT_APP_ID}&secret=${process.env.WECHAT_APP_SECRET}&js_code=${code}&grant_type=authorization_code`,
     );
-    const { openid, session_key } = response.data;
-    console.log('🚀 ~ UserService ~ wechatLogin ~ openid:', openid);
+    const { openid, session_key, errcode, errmsg } = response.data;
+    console.log('🚀 ~ UserService ~ wechatLogin ~ openid:', response.data);
+    if (errcode) {
+      throw new Error(`WeChat API error: ${errmsg}`);
+    }
     // 检查用户是否已存在
     let user = await this.userRepository.findOne({ where: { openId: openid } });
 
-    console.log('🚀 ~ UserService ~ wechatLogin ~ user:', user);
-    // 生成 JWT 令牌
-    const payload = { userId: user.id, openId: user.openId };
-    user.token = this.jwtService.sign(payload);
     if (!user) {
       // 如果用户不存在，创建新用户
       user = this.userRepository.create({
@@ -40,7 +39,10 @@ export class UserService {
       });
       await this.userRepository.save(user);
     }
-
+    console.log('🚀 ~ UserService ~ wechatLogin ~ user:', user);
+    // 生成 JWT 令牌
+    const payload = { userId: user.id, openId: user.openId };
+    user.token = this.jwtService.sign(payload);
     return user;
   }
 

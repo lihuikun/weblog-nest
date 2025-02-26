@@ -24,6 +24,9 @@ export class Article {
   @Column({ type: 'int', default: 0 })
   viewCount: number;
 
+  @Column({ type: 'int', default: 0 })
+  likeCount: number;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   coverImage?: string;
 
