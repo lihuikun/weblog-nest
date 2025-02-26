@@ -1,0 +1,22 @@
+name: autorun
+
+on:
+  push: # 代码提交时触发
+    branches:
+      - master # 仅对 master 分支生效
+
+jobs:
+  ssh-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Run script on remote server
+        run: |
+          ssh -o StrictHostKeyChecking=no lihk@s3.serv00.com "/home/lihk/weblog.sh"
