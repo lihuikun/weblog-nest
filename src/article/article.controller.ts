@@ -24,14 +24,19 @@ export class ArticleController {
   async getArticles(
     @Query('pageIndex') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
+    @Query('categoryId') categoryId?: number, // 可选参数
   ) {
-    return this.articleService.findAll(page, pageSize);
+    return this.articleService.findAll(page, pageSize, categoryId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '获取单篇文章' })
-  async getArticleById(@Param('id') id: number) {
-    return this.articleService.findOne(id);
+  async getArticleById(
+    @Query('pageIndex') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+    @Param('id') id: number,
+  ) {
+    return this.articleService.findOne(id, page, pageSize);
   }
 
   @Put(':id') // 使用 PUT 方法表示更新操作

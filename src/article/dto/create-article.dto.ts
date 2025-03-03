@@ -30,4 +30,14 @@ export class CreateArticleDto {
   @IsOptional()
   @IsString()
   coverImage?: string;
+
+  // 新增分类筛选
+  @ApiProperty({
+    description: '文章分类 ID',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  categoryId?: number;
 }

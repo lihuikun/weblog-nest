@@ -5,4 +5,9 @@ export class CreateWechatLoginDto {
   @IsNotEmpty()
   @IsString()
   code: string;
+
+  @ApiProperty({ description: '微信公众号登录凭证' })
+  @IsNotEmpty()
+  @IsString()
+  redirectUri?: string;
 }

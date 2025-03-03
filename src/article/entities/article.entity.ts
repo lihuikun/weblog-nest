@@ -16,32 +16,35 @@ export class Article {
   id: number;
 
   @Column({ type: 'varchar', length: 255 })
-  title: string;
+  title?: string;
 
   @Column({ type: 'text' })
-  content: string;
+  content?: string;
 
   @Column({ type: 'int', default: 0 })
-  viewCount: number;
+  viewCount?: number;
 
   @Column({ type: 'int', default: 0 })
-  likeCount: number;
+  likeCount?: number;
+
+  @Column({ type: 'int', default: 0 })
+  categoryId?: number;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   coverImage?: string;
 
   @OneToMany(() => Comment, (comment) => comment.article, { cascade: true })
-  comments: Comment[];
+  comments?: Comment[];
 
   @OneToMany(() => Like, (like) => like.article, { cascade: true })
-  likes: Like[];
+  likes?: Like[];
 
   @OneToMany(() => Favorite, (favorite) => favorite.article, { cascade: true })
   favorites: Favorite[];
 
   @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
+  createdAt?: Date;
 
   @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt: Date;
+  updatedAt?: Date;
 }

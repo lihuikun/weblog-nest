@@ -9,11 +9,20 @@ import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 export class UserController {
   constructor(private readonly authService: UserService) {}
 
-  @Post('wechat-login')
+  @Post('mini-login')
   @ApiOperation({ summary: '微信登录' })
   @ApiBody({ type: CreateWechatLoginDto })
-  async wechatLogin(@Body() dto: CreateWechatLoginDto): Promise<User> {
-    return this.authService.wechatLogin(dto);
+  async miniLogin(@Body() dto: CreateWechatLoginDto): Promise<User> {
+    return this.authService.wechatLogin(dto.code, 'mini');
+  }
+
+  @Post('official-login')
+  @ApiOperation({ summary: '微信公众号登录' })
+  @ApiBody({ type: CreateWechatLoginDto })
+  async officialLogin(@Body() dto: CreateWechatLoginDto): Promise<string> {
+    const encodedUri = encodeURIComponent(dto.redirectUri); // 对重定向 URI 进行 URL 编码
+    return `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${process.env.WECHAT_OFFICIAL_ID}&redirect_uri=${encodedUri}&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect`;
+    // return this.authService.wechatLogin(dto.code, 'official');
   }
 
   @Put('update-user/:id')

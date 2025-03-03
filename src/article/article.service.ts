@@ -18,21 +18,33 @@ export class ArticleService {
     return await this.articleRepository.save(article);
   }
 
-  async findAll(page: number = 1, pageSize: number = 10): Promise<Article[]> {
+  async findAll(
+    page: number = 1,
+    pageSize: number = 10,
+    categoryId?: number,
+  ): Promise<Article[]> {
     const skip = (page - 1) * pageSize;
-    const queryBuilder = this.dataSource
-      .createQueryBuilder()
-      .select('article')
-      .from(Article, 'article')
-      .leftJoinAndSelect('article.comments', 'comment')
-      .leftJoinAndSelect('comment.replies', 'reply')
-      .leftJoinAndSelect('article.likes', 'like')
-      .leftJoinAndSelect('article.favorites', 'favorite')
-      .where(
-        new Brackets((qb) => {
-          qb.where('comment.parentComment IS NULL'); // 只加载顶级评论
-        }),
-      )
+    // 原先的查询方式
+    // const queryBuilder = this.dataSource
+    //   .createQueryBuilder()
+    //   .select('article')
+    //   .from(Article, 'article')
+    //   .leftJoinAndSelect('article.comments', 'comment')
+    //   .leftJoinAndSelect('comment.replies', 'reply')
+    //   .leftJoinAndSelect('article.likes', 'like')
+    //   .leftJoinAndSelect('article.favorites', 'favorite')
+    //   .where(
+    //     new Brackets((qb) => {
+    //       qb.where('comment.parentComment IS NULL'); // 只加载顶级评论
+    //     }),
+    //   )
+    //   .skip(skip)
+    //   .take(pageSize);
+
+    // 获取分类下的文章
+    const queryBuilder = this.articleRepository
+      .createQueryBuilder('article')
+      .andWhere('article.categoryId = :categoryId', { categoryId })
       .skip(skip)
       .take(pageSize);
 
@@ -40,15 +52,60 @@ export class ArticleService {
     return articles;
   }
 
-  async findOne(id: number): Promise<Article> {
-    const article = await this.articleRepository.findOne({
-      where: { id },
-      relations: ['comments', 'likes', 'favorites'],
-    });
+  async findOne(
+    articleId: number,
+    page: number = 1,
+    pageSize: number = 1,
+  ): Promise<any> {
+    const queryBuilder = this.dataSource
+      .createQueryBuilder()
+      .select([
+        'article.id',
+        'article.title',
+        'like.id AS likeId',
+        'favorite.id AS favoriteId',
+        'comment.id AS commentId',
+        'comment.content AS commentContent',
+        'reply.id AS replyId',
+        'reply.content AS replyContent',
+      ])
+      .from(Article, 'article')
+      .leftJoinAndSelect('article.comments', 'comment')
+      .leftJoinAndSelect('comment.replies', 'reply')
+      .leftJoinAndSelect('article.likes', 'like')
+      .leftJoinAndSelect('article.favorites', 'favorite')
+      .where('article.id = :articleId', { articleId })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('comment.parentComment IS NULL'); // 只加载顶级评论
+        }),
+      )
+      .skip((page - 1) * pageSize) // 分页起始位置
+      .take(pageSize); // 每页数量限制
+
+    const article = await queryBuilder.getOne();
+    console.log('🚀 ~ ArticleService ~ article:', article);
     if (!article) {
-      throw new Error(`Article with ID ${id} not found`);
+      return null; // 处理没有找到文章的情况
     }
-    return article;
+
+    // 将查询结果按需求进行格式化
+    const res = {
+      id: article.id,
+      title: article.title, // 假设返回文章标题
+      comments: article.comments.map((comment) => ({
+        id: comment.id,
+        content: comment.content,
+        replies: comment.replies.map((reply) => ({
+          id: reply.id,
+          content: reply.content,
+        })),
+      })),
+      likes: article.likes.map((like) => like.id), // 只返回 like 的 ID，避免加载不必要的信息
+      favorites: article.favorites.map((favorite) => favorite.id), // 同样只返回 favorite 的 ID
+    };
+
+    return res as any;
   }
 
   async update(

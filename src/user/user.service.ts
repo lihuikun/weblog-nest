@@ -15,13 +15,24 @@ export class UserService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
   ) {}
-  async wechatLogin(dto: CreateWechatLoginDto): Promise<User> {
-    const { code } = dto;
+  async wechatLogin(
+    code: string,
+    platform: 'mini' | 'official',
+  ): Promise<User> {
+    let response;
+    // 根据不同平台调用不同的微信 API
+    if (platform === 'mini') {
+      // 小程序登录
+      response = await axios.get(
+        `https://api.weixin.qq.com/sns/jscode2session?appid=${process.env.WECHAT_APP_ID}&secret=${process.env.WECHAT_APP_SECRET}&js_code=${code}&grant_type=authorization_code`,
+      );
+    } else if (platform === 'official') {
+      // 公众号登录
+      response = await axios.get(
+        `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${process.env.WECHAT_OFFICIAL_ID}&secret=${process.env.WECHAT_OFFICIAL_SECRET}&code=${code}&grant_type=authorization_code`,
+      );
+    }
 
-    // 调用微信 API 获取用户信息
-    const response = await axios.get(
-      `https://api.weixin.qq.com/sns/jscode2session?appid=${process.env.WECHAT_APP_ID}&secret=${process.env.WECHAT_APP_SECRET}&js_code=${code}&grant_type=authorization_code`,
-    );
     const { openid, session_key, errcode, errmsg } = response.data;
     console.log('🚀 ~ UserService ~ wechatLogin ~ openid:', response.data);
     if (errcode) {
