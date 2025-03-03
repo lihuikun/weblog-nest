@@ -12,6 +12,7 @@ import { CategoryModule } from './category/category.module';
 import { LikeModule } from './like/like.module';
 import { CommentModule } from './comment/comment.module';
 import { UserModule } from './user/user.module';
+import { HotSearchModule } from './hot-search/hot-search.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -33,6 +34,7 @@ import { UserModule } from './user/user.module';
     LikeModule,
     CommentModule,
     UserModule,
+    HotSearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],
