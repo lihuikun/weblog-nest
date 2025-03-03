@@ -19,4 +19,4 @@ jobs:
 
       - name: Run script on remote server
         run: |
-          ssh -o StrictHostKeyChecking=no lihk@s3.serv00.com "/home/lihk/weblog.sh"
+          ssh -o StrictHostKeyChecking=no zhyqqkjerb@s15.serv00.com "/home/zhyqqkjerb/weblog.sh"
