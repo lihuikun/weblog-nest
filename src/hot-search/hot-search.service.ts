@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import axios from 'axios';
 import { HotSearch } from './entities/hot-search.entity';
-import { Cron } from '@nestjs/schedule';
+// import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class HotSearchService {
@@ -133,18 +133,18 @@ export class HotSearchService {
   /**
    * 每小时执行一次爬取任务
    */
-  @Cron('0 * * * *') // 每小时执行一次
-  async fetchAllHotSearch() {
-    this.logger.log('开始执行热搜爬取任务...');
+  // @Cron('0 * * * *') // 每小时执行一次
+  // async fetchAllHotSearch() {
+  //   this.logger.log('开始执行热搜爬取任务...');
 
-    // 爬取抖音热搜
-    await this.fetchDouyinHotSearch();
-    // await this.fetchJuejinHotSearch();
-    // await this.fetchToutiaoHotSearch();
-    // await this.fetchWeiboHotSearch();
+  //   // 爬取抖音热搜
+  //   await this.fetchDouyinHotSearch();
+  //   // await this.fetchJuejinHotSearch();
+  //   // await this.fetchToutiaoHotSearch();
+  //   // await this.fetchWeiboHotSearch();
 
-    // 未来可以增加掘金、百度等的爬取逻辑
-  }
+  //   // 未来可以增加掘金、百度等的爬取逻辑
+  // }
   /**
    * 获取某个平台的热搜数据
    */
