@@ -26,7 +26,7 @@ export class HotSearchService {
       const response = await axios.get(url);
 
       if (response.data && response.data.word_list) {
-        const jsonData = JSON.stringify(response.data); // 把整个 JSON 直接存数据库
+        const jsonData = JSON.stringify(response.data.word_list); // 把整个 JSON 直接存数据库
         this.saveOrUpdateHotSearch(jsonData, 'douyin');
         this.logger.log(`✅ 抖音热搜数据已更新`);
       }
@@ -138,8 +138,8 @@ export class HotSearchService {
     this.logger.log('开始执行热搜爬取任务...');
 
     // 爬取抖音热搜
-    // await this.fetchDouyinHotSearch();
-    await this.fetchJuejinHotSearch();
+    await this.fetchDouyinHotSearch();
+    // await this.fetchJuejinHotSearch();
     // await this.fetchToutiaoHotSearch();
     // await this.fetchWeiboHotSearch();
 
