@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import axios from 'axios';
 import { HotSearch } from './entities/hot-search.entity';
-import { Cron } from '@nestjs/schedule';
+import * as cron from 'node-cron';
 
 @Injectable()
 export class HotSearchService {
@@ -14,7 +14,21 @@ export class HotSearchService {
   constructor(
     @InjectRepository(HotSearch)
     private hotSearchRepository: Repository<HotSearch>,
-  ) {}
+  ) {
+    /**
+     * 每小时执行一次爬取任务
+     */
+    cron.schedule(
+      '0 * * * *',
+      async () => {
+        await this.fetchAllHotSearch();
+      },
+      {
+        scheduled: true,
+        timezone: 'Asia/Shanghai',
+      },
+    );
+  }
 
   /**
    * 爬取抖音热搜榜
@@ -130,10 +144,6 @@ export class HotSearchService {
       this.logger.error('获取微博热搜数据异常', error);
     }
   }
-  /**
-   * 每小时执行一次爬取任务
-   */
-  @Cron('0 * * * *') // 每小时执行一次
   async fetchAllHotSearch() {
     // 爬取抖音热搜
     await this.fetchDouyinHotSearch();
