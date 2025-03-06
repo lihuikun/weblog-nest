@@ -5,7 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import axios from 'axios';
 import { HotSearch } from './entities/hot-search.entity';
-import * as cron from 'node-cron';
+// import * as cron from 'node-cron';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class HotSearchService {
@@ -18,16 +19,16 @@ export class HotSearchService {
     /**
      * 每小时执行一次爬取任务
      */
-    cron.schedule(
-      '0 * * * *',
-      async () => {
-        await this.fetchAllHotSearch();
-      },
-      {
-        scheduled: true,
-        timezone: 'Asia/Shanghai',
-      },
-    );
+    // cron.schedule(
+    //   '0 * * * *',
+    //   async () => {
+    //     await this.fetchAllHotSearch();
+    //   },
+    //   {
+    //     scheduled: true,
+    //     timezone: 'Asia/Shanghai',
+    //   },
+    // );
   }
 
   /**
@@ -51,6 +52,8 @@ export class HotSearchService {
   /**
    * 爬取掘金热搜榜
    */
+  // 定时爬取
+  @Cron('0 * * * *')
   async fetchJuejinHotSearch() {
     try {
       const url =
