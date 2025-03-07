@@ -13,6 +13,10 @@ import { LikeModule } from './like/like.module';
 import { CommentModule } from './comment/comment.module';
 import { UserModule } from './user/user.module';
 import { HotSearchModule } from './hot-search/hot-search.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { PvInterceptor } from './common/interceptors/pv.interceptor';
+import { PvModule } from './pv/pv.module';
+import { Pv } from './pv/entities/pv.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -22,6 +26,7 @@ import { HotSearchModule } from './hot-search/hot-search.module';
     TypeOrmModule.forRoot({
       ...databaseConfig,
     }),
+    TypeOrmModule.forFeature([Pv]),
     JwtModule.register({
       global: true, //开启全局注册
       secret: process.env.JWT_SECRET,
@@ -35,8 +40,15 @@ import { HotSearchModule } from './hot-search/hot-search.module';
     CommentModule,
     UserModule,
     HotSearchModule,
+    PvModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: PvInterceptor,
+    },
+  ],
 })
 export class AppModule {}
