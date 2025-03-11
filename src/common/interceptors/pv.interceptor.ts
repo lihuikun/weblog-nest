@@ -35,7 +35,6 @@ export class PvInterceptor implements NestInterceptor {
     const path = request.path;
     const ipAddress = getRealIp(request);
     const userAgent = request.headers['user-agent'] as string;
-    console.log('🚀 ~ PvInterceptor ~ request:', ipAddress);
 
     // 获取今日的开始时间（0点）
     const todayStart = new Date();
@@ -51,7 +50,6 @@ export class PvInterceptor implements NestInterceptor {
 
     // 解析用户代理信息
     const userAgentInfo = parse(userAgent);
-    console.log('🚀 ~ PvInterceptor ~ userAgentInfo:', userAgentInfo);
     const deviceType = userAgentInfo.full || 'unknown';
     const browserName = userAgentInfo.name || 'unknown';
     const browserVersion = userAgentInfo.version || 'unknown';

@@ -40,7 +40,13 @@ export class HotSearchService {
       const response = await axios.get(url);
 
       if (response.data && response.data.word_list) {
-        const jsonData = JSON.stringify(response.data.word_list); // 把整个 JSON 直接存数据库
+        const res = response.data.word_list.map((item) => {
+          return {
+            ...item,
+            url: `https://www.douyin.com/search/${encodeURIComponent(item.word)}?type=general`,
+          };
+        });
+        const jsonData = JSON.stringify(res); // 把整个 JSON 直接存数据库
         this.saveOrUpdateHotSearch(jsonData, 'douyin');
         this.logger.log(`✅ 抖音热搜数据已更新`);
       }
@@ -100,6 +106,7 @@ export class HotSearchService {
           word: item.Title,
           hot_value: parseInt(item.HotValue, 10), // 假设热搜热度是一个数字，转换为整数
           label: index + 1,
+          url: item.Url,
         };
       });
 

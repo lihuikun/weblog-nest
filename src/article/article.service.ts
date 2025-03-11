@@ -22,7 +22,7 @@ export class ArticleService {
     page: number = 1,
     pageSize: number = 10,
     categoryId?: number,
-  ): Promise<Article[]> {
+  ): Promise<{ total: number; rows: Article[] }> {
     const skip = (page - 1) * pageSize;
     // 原先的查询方式
     // const queryBuilder = this.dataSource
@@ -44,12 +44,18 @@ export class ArticleService {
     // 获取分类下的文章
     const queryBuilder = this.articleRepository
       .createQueryBuilder('article')
-      .andWhere('article.categoryId = :categoryId', { categoryId })
+      .orderBy('article.createTime', 'DESC')
       .skip(skip)
       .take(pageSize);
 
+    if (Number(categoryId) !== 0) {
+      queryBuilder.andWhere('article.categoryId = :categoryId', { categoryId });
+    }
+
     const articles = await queryBuilder.getMany();
-    return articles;
+    const total = await queryBuilder.getCount();
+
+    return { total, rows: articles };
   }
 
   async findOne(

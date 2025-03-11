@@ -22,7 +22,7 @@ export class ArticleController {
   @Get()
   @ApiOperation({ summary: '获取文章列表' })
   async getArticles(
-    @Query('pageIndex') page: number = 1,
+    @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
     @Query('categoryId') categoryId?: number, // 可选参数
   ) {
@@ -32,7 +32,7 @@ export class ArticleController {
   @Get(':id')
   @ApiOperation({ summary: '获取单篇文章' })
   async getArticleById(
-    @Query('pageIndex') page: number = 1,
+    @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
     @Param('id') id: number,
   ) {

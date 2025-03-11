@@ -10,7 +10,7 @@ export class PvService {
     @InjectRepository(Pv)
     private PvRepository: Repository<Pv>,
   ) {}
-  @UseInterceptors(PvInterceptor)
+  // @UseInterceptors(PvInterceptor)
   async getPvStats(): Promise<CreatePvDto> {
     const totalPv = (await this.PvRepository.count()) + 200; // 获取总PV
     const today = new Date();

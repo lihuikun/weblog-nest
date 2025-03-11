@@ -43,8 +43,8 @@ export class Article {
   favorites: Favorite[];
 
   @CreateDateColumn({ type: 'timestamp' })
-  createdAt?: Date;
+  createTime?: Date;
 
   @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt?: Date;
+  updatedTime?: Date;
 }
