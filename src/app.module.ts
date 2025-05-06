@@ -17,6 +17,8 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { PvInterceptor } from './common/interceptors/pv.interceptor';
 import { PvModule } from './pv/pv.module';
 import { Pv } from './pv/entities/pv.entity';
+import { DreamModule } from './dream/dream.module';
+import { SiliconflowModule } from './siliconflow/siliconflow.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -41,6 +43,8 @@ import { Pv } from './pv/entities/pv.entity';
     UserModule,
     HotSearchModule,
     PvModule,
+    DreamModule,
+    SiliconflowModule,
   ],
   controllers: [AppController],
   providers: [
@@ -51,4 +55,4 @@ import { Pv } from './pv/entities/pv.entity';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
