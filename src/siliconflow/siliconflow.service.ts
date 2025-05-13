@@ -8,7 +8,7 @@ export class SiliconFlowService {
   async getChatCompletion(createSiliconflowDto: CreateSiliconflowDto): Promise<any> {
     try {
       const prompt = dramPrompts;
-      console.log("🚀 ~ SiliconFlowService ~ getChatCompletion ~ prompt:", prompt)
+      console.log("🚀 ~ SiliconFlowService ~ getChatCompletion ~ prompt:", createSiliconflowDto.userInput)
 
       const response = await axios.post(
         'https://api.siliconflow.cn/v1/chat/completions',

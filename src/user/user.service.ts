@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import axios from 'axios';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '../user/entities/user.entity';
+import { User, LoginType } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
+import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -14,7 +16,59 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
+  async emailRegister(createEmailUserDto: CreateEmailUserDto): Promise<User> {
+    // 检查邮箱是否已存在
+    const existingUser = await this.userRepository.findOne({
+      where: { email: createEmailUserDto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('该邮箱已被注册');
+    }
+    // 添加正则表达式
+    const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if (!emailRegex.test(createEmailUserDto.email)) {
+      throw new ConflictException('邮箱格式不正确');
+    }
+    // 创建新用户
+    const hashedPassword = await bcrypt.hash(createEmailUserDto.password, 10);
+    const user = this.userRepository.create({
+      ...createEmailUserDto,
+      password: hashedPassword,
+      loginType: LoginType.EMAIL,
+    });
+
+    await this.userRepository.save(user);
+
+    // 生成 JWT 令牌
+    const payload = { userId: user.id, email: user.email };
+    user.token = this.jwtService.sign(payload);
+
+    return user;
+  }
+
+  async emailLogin(email: string, password: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { email, loginType: LoginType.EMAIL },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('密码错误');
+    }
+
+    // 生成 JWT 令牌
+    const payload = { userId: user.id, email: user.email };
+    user.token = this.jwtService.sign(payload);
+
+    return user;
+  }
+
   async wechatLogin(
     code: string,
     platform: 'mini' | 'official',
@@ -47,6 +101,7 @@ export class UserService {
         openId: openid,
         nickname: '', // 初始值为空，后续可通过其他接口更新
         avatarUrl: '',
+        loginType: platform === 'mini' ? LoginType.WECHAT_MINI : LoginType.WECHAT_OFFICIAL,
       });
       await this.userRepository.save(user);
     }

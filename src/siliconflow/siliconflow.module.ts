@@ -5,5 +5,6 @@ import { SiliconflowController } from './siliconflow.controller';
 @Module({
   controllers: [SiliconflowController],
   providers: [SiliconFlowService],
+  exports: [SiliconFlowService],
 })
 export class SiliconflowModule { }

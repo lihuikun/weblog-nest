@@ -1,13 +1,16 @@
 import { Controller, Post, Body, Param, Put } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { User } from '../user/entities/user.entity';
 import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
+import { CreateEmailUserDto } from './dto/create-email-user.dto';
+import { EmailLoginDto } from './dto/email-login.dto';
 
+@ApiTags('用户管理')
 @Controller('user')
 export class UserController {
-  constructor(private readonly authService: UserService) {}
+  constructor(private readonly authService: UserService) { }
 
   @Post('mini-login')
   @ApiOperation({ summary: '微信登录' })
@@ -34,5 +37,19 @@ export class UserController {
     @Body() userDto: CreateUserDto,
   ): Promise<User> {
     return this.authService.updateUser(id, userDto);
+  }
+
+  @Post('email/register')
+  @ApiOperation({ summary: '邮箱注册' })
+  @ApiBody({ type: CreateEmailUserDto })
+  async emailRegister(@Body() createEmailUserDto: CreateEmailUserDto): Promise<User> {
+    return this.authService.emailRegister(createEmailUserDto);
+  }
+
+  @Post('email/login')
+  @ApiOperation({ summary: '邮箱登录' })
+  @ApiBody({ type: EmailLoginDto })
+  async emailLogin(@Body() emailLoginDto: EmailLoginDto): Promise<User> {
+    return this.authService.emailLogin(emailLoginDto.email, emailLoginDto.password);
   }
 }
