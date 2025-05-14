@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { JwtService } from '@nestjs/jwt';
-// import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UserService {
@@ -32,10 +32,11 @@ export class UserService {
       throw new ConflictException('邮箱格式不正确');
     }
     // 创建新用户
-    // const hashedPassword = await bcrypt.hash(createEmailUserDto.password, 10);
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = this.hashPassword(createEmailUserDto.password, salt);
     const user = this.userRepository.create({
       ...createEmailUserDto,
-      // password: hashedPassword,
+      password: `${salt}:${hashedPassword}`,
       loginType: LoginType.EMAIL,
     });
 
@@ -57,16 +58,28 @@ export class UserService {
       throw new UnauthorizedException('用户不存在');
     }
 
-    // const isPasswordValid = await bcrypt.compare(password, user.password);
-    // if (!isPasswordValid) {
-    //   throw new UnauthorizedException('密码错误');
-    // }
+    const isPasswordValid = this.verifyPassword(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('密码错误');
+    }
 
     // 生成 JWT 令牌
     const payload = { userId: user.id, email: user.email };
     user.token = this.jwtService.sign(payload);
 
     return user;
+  }
+
+  // 使用 crypto 哈希密码
+  private hashPassword(password: string, salt: string): string {
+    return crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  }
+
+  // 验证密码
+  private verifyPassword(password: string, storedPassword: string): boolean {
+    const [salt, hashedPassword] = storedPassword.split(':');
+    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+    return hash === hashedPassword;
   }
 
   async wechatLogin(
