@@ -36,6 +36,10 @@ export class Dream {
   @JoinColumn({ name: 'userId' })
   user: User;
 
+  //是否分享到集梦大厅
+  @Column({ type: 'boolean', default: false })
+  isShared: boolean;
+
   @CreateDateColumn({ type: 'timestamp' })
   createTime: Date;
 
