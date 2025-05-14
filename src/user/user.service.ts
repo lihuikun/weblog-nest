@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+// import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -32,10 +32,10 @@ export class UserService {
       throw new ConflictException('邮箱格式不正确');
     }
     // 创建新用户
-    const hashedPassword = await bcrypt.hash(createEmailUserDto.password, 10);
+    // const hashedPassword = await bcrypt.hash(createEmailUserDto.password, 10);
     const user = this.userRepository.create({
       ...createEmailUserDto,
-      password: hashedPassword,
+      // password: hashedPassword,
       loginType: LoginType.EMAIL,
     });
 
@@ -57,10 +57,10 @@ export class UserService {
       throw new UnauthorizedException('用户不存在');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('密码错误');
-    }
+    // const isPasswordValid = await bcrypt.compare(password, user.password);
+    // if (!isPasswordValid) {
+    //   throw new UnauthorizedException('密码错误');
+    // }
 
     // 生成 JWT 令牌
     const payload = { userId: user.id, email: user.email };
