@@ -19,6 +19,8 @@ import { PvModule } from './pv/pv.module';
 import { Pv } from './pv/entities/pv.entity';
 import { DreamModule } from './dream/dream.module';
 import { SiliconflowModule } from './siliconflow/siliconflow.module';
+import { MessageModule } from './message/message.module';
+import { DailyQuoteModule } from './daily-quote/daily-quote.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -45,6 +47,8 @@ import { SiliconflowModule } from './siliconflow/siliconflow.module';
     PvModule,
     DreamModule,
     SiliconflowModule,
+    MessageModule,
+    DailyQuoteModule,
   ],
   controllers: [AppController],
   providers: [
