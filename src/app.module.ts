@@ -21,6 +21,7 @@ import { DreamModule } from './dream/dream.module';
 import { SiliconflowModule } from './siliconflow/siliconflow.module';
 import { MessageModule } from './message/message.module';
 import { DailyQuoteModule } from './daily-quote/daily-quote.module';
+import { JuejinModule } from './juejin/juejin.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +50,7 @@ import { DailyQuoteModule } from './daily-quote/daily-quote.module';
     SiliconflowModule,
     MessageModule,
     DailyQuoteModule,
+    JuejinModule,
   ],
   controllers: [AppController],
   providers: [
