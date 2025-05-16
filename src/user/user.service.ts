@@ -143,10 +143,12 @@ export class UserService {
   async githubLogin(createGithubLoginDto: CreateGithubLoginDto): Promise<User> {
     const { code } = createGithubLoginDto;
     const response = await axios.post('https://github.com/login/oauth/access_token', {
+      redirect_uri: process.env.GITHUB_CALLBACK_URL,
       client_id: process.env.GITHUB_CLIENT_ID,
       client_secret: process.env.GITHUB_CLIENT_SECRET,
       code,
     });
+    console.log("🚀 ~ UserService ~ githubLogin ~ response:", response)
     const { access_token } = response.data;
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
