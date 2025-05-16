@@ -172,6 +172,7 @@ export class UserService {
       console.log("🚀 ~ UserService ~ githubLogin ~ newUser:", newUser)
       return newUser;
     }
+    user.token = this.jwtService.sign({ userId: user.id, email: user.email });
     return user;
   }
 }
