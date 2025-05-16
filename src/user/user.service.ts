@@ -9,6 +9,7 @@ import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
+import { CreateGithubLoginDto } from './dto/github-login.dto';
 
 @Injectable()
 export class UserService {
@@ -136,6 +137,34 @@ export class UserService {
     user.avatarUrl = userDto.avatarUrl || user.avatarUrl;
 
     await this.userRepository.save(user);
+    return user;
+  }
+
+  async githubLogin(createGithubLoginDto: CreateGithubLoginDto): Promise<User> {
+    const { code } = createGithubLoginDto;
+    const response = await axios.post('https://github.com/login/oauth/access_token', {
+      client_id: process.env.GITHUB_CLIENT_ID,
+      client_secret: process.env.GITHUB_CLIENT_SECRET,
+      code,
+    });
+    const { access_token } = response.data;
+    const userResponse = await axios.get('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+    const { login, avatar_url, email } = userResponse.data;
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      const newUser = this.userRepository.create({
+        email,
+        loginType: LoginType.GITHUB,
+        nickname: login,
+        avatarUrl: avatar_url,
+      });
+      await this.userRepository.save(newUser);
+      return newUser;
+    }
     return user;
   }
 }

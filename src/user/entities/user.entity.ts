@@ -3,7 +3,8 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 export enum LoginType {
   EMAIL = 'email',
   WECHAT_MINI = 'wechat_mini',
-  WECHAT_OFFICIAL = 'wechat_official'
+  WECHAT_OFFICIAL = 'wechat_official',
+  GITHUB = 'github'
 }
 
 export enum Role {

@@ -6,6 +6,7 @@ import { User } from '../user/entities/user.entity';
 import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
+import { CreateGithubLoginDto } from './dto/github-login.dto';
 
 @ApiTags('用户管理')
 @Controller('user')
@@ -51,5 +52,13 @@ export class UserController {
   @ApiBody({ type: EmailLoginDto })
   async emailLogin(@Body() emailLoginDto: EmailLoginDto): Promise<User> {
     return this.authService.emailLogin(emailLoginDto.email, emailLoginDto.password);
+  }
+
+  //github 登录
+  @Post('github/login')
+  @ApiOperation({ summary: 'GitHub登录' })
+  @ApiBody({ type: CreateGithubLoginDto })
+  async githubLogin(@Body() createGithubLoginDto: CreateGithubLoginDto): Promise<User> {
+    return this.authService.githubLogin(createGithubLoginDto);
   }
 }
