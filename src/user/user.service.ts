@@ -168,11 +168,11 @@ export class UserService {
         avatarUrl: avatar_url,
       });
       await this.userRepository.save(newUser);
-      newUser.token = this.jwtService.sign({ userId: newUser.id, email: newUser.email });
+      newUser.token = this.jwtService.sign({ userId: newUser.id, openId: newUser.openId });
       console.log("🚀 ~ UserService ~ githubLogin ~ newUser:", newUser)
       return newUser;
     }
-    user.token = this.jwtService.sign({ userId: user.id, email: user.email });
+    user.token = this.jwtService.sign({ userId: user.id, openId: user.openId });
     return user;
   }
 }
