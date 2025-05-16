@@ -147,24 +147,29 @@ export class UserService {
       client_id: process.env.GITHUB_CLIENT_ID,
       client_secret: process.env.GITHUB_CLIENT_SECRET,
       code,
+    }, {
+      headers: { 'accept': 'application/json' },
     });
-    console.log("🚀 ~ UserService ~ githubLogin ~ response:", response)
     const { access_token } = response.data;
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${access_token}`,
       },
     });
-    const { login, avatar_url, email } = userResponse.data;
-    const user = await this.userRepository.findOne({ where: { email } });
+    const { login, avatar_url, email, id } = userResponse.data;
+    console.log("🚀 ~ UserService ~ githubLogin ~ response:", userResponse.data)
+    const user = await this.userRepository.findOne({ where: { openId: id.toString() } });
     if (!user) {
       const newUser = this.userRepository.create({
+        openId: id.toString(),
         email,
         loginType: LoginType.GITHUB,
         nickname: login,
         avatarUrl: avatar_url,
       });
       await this.userRepository.save(newUser);
+      newUser.token = this.jwtService.sign({ userId: newUser.id, email: newUser.email });
+      console.log("🚀 ~ UserService ~ githubLogin ~ newUser:", newUser)
       return newUser;
     }
     return user;
