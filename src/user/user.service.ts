@@ -192,7 +192,8 @@ export class UserService {
     // 生成 JWT 令牌
     const payload = { userId: user.id, openId: user.openId };
     user.token = this.generateToken(payload);
-
+    user.nickname = login;
+    user.avatarUrl = avatar_url;
     // 保存token到用户记录
     await this.userRepository.save(user);
 
