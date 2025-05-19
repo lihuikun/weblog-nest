@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -13,11 +13,29 @@ import { CreateGithubLoginDto } from './dto/github-login.dto';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
   ) { }
+
+  // 统一生成JWT的方法
+  private generateToken(payload: any): string {
+    try {
+      const token = this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET,
+        expiresIn: '24h'
+      });
+      this.logger.log(`生成token成功: ${JSON.stringify(payload)}`);
+      return token;
+    } catch (error) {
+      this.logger.error(`生成token失败: ${error.message}`);
+      throw error;
+    }
+  }
+
   async emailRegister(createEmailUserDto: CreateEmailUserDto): Promise<User> {
     // 检查邮箱是否已存在
     const existingUser = await this.userRepository.findOne({
@@ -43,9 +61,9 @@ export class UserService {
 
     await this.userRepository.save(user);
 
-    // 生成 JWT 令牌
+    // 生成 JWT 令牌，仅使用userId和email
     const payload = { userId: user.id, email: user.email };
-    user.token = this.jwtService.sign(payload);
+    user.token = this.generateToken(payload);
 
     return user;
   }
@@ -64,9 +82,9 @@ export class UserService {
       throw new UnauthorizedException('密码错误');
     }
 
-    // 生成 JWT 令牌
+    // 生成 JWT 令牌，仅使用userId和email
     const payload = { userId: user.id, email: user.email };
-    user.token = this.jwtService.sign(payload);
+    user.token = this.generateToken(payload);
 
     return user;
   }
@@ -102,7 +120,8 @@ export class UserService {
     }
 
     const { openid, session_key, errcode, errmsg } = response.data;
-    console.log('🚀 ~ UserService ~ wechatLogin ~ openid:', response.data);
+    this.logger.log(`微信登录响应: ${JSON.stringify(response.data)}`);
+
     if (errcode) {
       throw new Error(`WeChat API error: ${errmsg}`);
     }
@@ -119,24 +138,14 @@ export class UserService {
       });
       await this.userRepository.save(user);
     }
-    console.log('🚀 ~ UserService ~ wechatLogin ~ user:', user);
+
     // 生成 JWT 令牌
     const payload = { userId: user.id, openId: user.openId };
-    user.token = this.jwtService.sign(payload);
-    return user;
-  }
+    user.token = this.generateToken(payload);
 
-  async updateUser(id: number, userDto: CreateUserDto): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    // 更新用户信息
-    user.nickname = userDto.nickname || user.nickname;
-    user.avatarUrl = userDto.avatarUrl || user.avatarUrl;
-
+    // 保存token到用户记录
     await this.userRepository.save(user);
+
     return user;
   }
 
@@ -157,7 +166,8 @@ export class UserService {
       },
     });
     const { login, avatar_url, email, id } = userResponse.data;
-    console.log("🚀 ~ UserService ~ githubLogin ~ response:", userResponse.data)
+    this.logger.log(`GitHub登录响应: ${JSON.stringify(userResponse.data)}`);
+
     const user = await this.userRepository.findOne({ where: { openId: id.toString() } });
     if (!user) {
       const newUser = this.userRepository.create({
@@ -168,11 +178,38 @@ export class UserService {
         avatarUrl: avatar_url,
       });
       await this.userRepository.save(newUser);
-      newUser.token = this.jwtService.sign({ userId: newUser.id, openId: newUser.openId });
-      console.log("🚀 ~ UserService ~ githubLogin ~ newUser:", newUser)
+
+      // 生成 JWT 令牌
+      const payload = { userId: newUser.id, openId: newUser.openId };
+      newUser.token = this.generateToken(payload);
+
+      // 保存token到用户记录
+      await this.userRepository.save(newUser);
+
       return newUser;
     }
-    user.token = this.jwtService.sign({ userId: user.id, openId: user.openId });
+
+    // 生成 JWT 令牌
+    const payload = { userId: user.id, openId: user.openId };
+    user.token = this.generateToken(payload);
+
+    // 保存token到用户记录
+    await this.userRepository.save(user);
+
+    return user;
+  }
+
+  async updateUser(id: number, userDto: CreateUserDto): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // 更新用户信息
+    user.nickname = userDto.nickname || user.nickname;
+    user.avatarUrl = userDto.avatarUrl || user.avatarUrl;
+
+    await this.userRepository.save(user);
     return user;
   }
 }
