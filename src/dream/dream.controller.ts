@@ -93,7 +93,7 @@ export class DreamController {
         return this.dreamService.remove(+id, userId);
     }
 
-    @Post(':id/analyze')
+    @Post('analyze/:id')
     @ApiOperation({ summary: 'AI分析梦境' })
     @ApiResponse({ status: 200, description: '分析成功' })
     analyze(
