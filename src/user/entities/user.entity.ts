@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export enum LoginType {
   EMAIL = 'email',
@@ -43,4 +43,10 @@ export class User {
   // 角色,默认用户
   @Column({ type: 'enum', enum: Role, default: Role.USER, nullable: false })
   role: Role;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createTime?: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedTime?: Date;
 }
