@@ -9,6 +9,7 @@ export enum LoginType {
 
 export enum Role {
   ADMIN = 'admin',
+  SUBADMIN = 'subAdmin',
   USER = 'user'
 }
 

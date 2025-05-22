@@ -213,4 +213,31 @@ export class UserService {
     await this.userRepository.save(user);
     return user;
   }
+
+  // 分页获取用户列表
+  async getUserList(page: number = 1, pageSize: number = 10) {
+    const [list, total] = await this.userRepository.findAndCount({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      order: { id: 'DESC' },
+    });
+    return { list, total, page, pageSize };
+  }
+
+  // 删除用户
+  async deleteUser(id: number) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new Error('用户不存在');
+    await this.userRepository.remove(user);
+    return { success: true };
+  }
+
+  // 部分字段更新用户
+  async updateUserPartial(id: number, dto: Partial<CreateUserDto>): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new Error('用户不存在');
+    Object.assign(user, dto);
+    await this.userRepository.save(user);
+    return user;
+  }
 }

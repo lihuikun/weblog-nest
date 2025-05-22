@@ -1,17 +1,44 @@
-import { Controller, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Post, Body, Param, Put, Get, Delete } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { User } from '../user/entities/user.entity';
 import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
 import { CreateGithubLoginDto } from './dto/github-login.dto';
+import { Pagination, PaginationParams } from '../common/decorators/pagination.decorator';
 
 @ApiTags('用户管理')
 @Controller('user')
 export class UserController {
   constructor(private readonly authService: UserService) { }
+
+  @Get('list')
+  @ApiOperation({ summary: '获取用户分页列表' })
+  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, description: '每页数量', example: 10 })
+  async getUserList(@Pagination() pagination: PaginationParams) {
+    return this.authService.getUserList(pagination.page, pagination.pageSize);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: '删除用户' })
+  @ApiParam({ name: 'id', description: '用户ID' })
+  async deleteUser(@Param('id') id: number) {
+    return this.authService.deleteUser(id);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: '更新用户信息（部分字段）' })
+  @ApiParam({ name: 'id', description: '用户 ID' })
+  @ApiBody({ type: CreateUserDto })
+  async updateUserPartial(
+    @Param('id') id: number,
+    @Body() userDto: Partial<CreateUserDto>,
+  ): Promise<User> {
+    return this.authService.updateUserPartial(id, userDto);
+  }
 
   @Post('mini-login')
   @ApiOperation({ summary: '微信登录' })
@@ -27,17 +54,6 @@ export class UserController {
     const encodedUri = encodeURIComponent(dto.redirectUri); // 对重定向 URI 进行 URL 编码
     return `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${process.env.WECHAT_OFFICIAL_ID}&redirect_uri=${encodedUri}&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect`;
     // return this.authService.wechatLogin(dto.code, 'official');
-  }
-
-  @Put('update-user/:id')
-  @ApiOperation({ summary: '更新用户信息' })
-  @ApiParam({ name: 'id', description: '用户 ID' })
-  @ApiBody({ type: CreateUserDto })
-  async updateUser(
-    @Param('id') id: number,
-    @Body() userDto: CreateUserDto,
-  ): Promise<User> {
-    return this.authService.updateUser(id, userDto);
   }
 
   @Post('email/register')
