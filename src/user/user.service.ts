@@ -237,7 +237,6 @@ export class UserService {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) throw new Error('用户不存在');
     Object.assign(user, dto);
-    user.updatedTime = new Date();
     await this.userRepository.save(user);
     return user;
   }
