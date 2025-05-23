@@ -111,6 +111,8 @@ export class DreamController {
             res.setHeader('Connection', 'keep-alive');
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+            res.setHeader('X-Accel-Buffering', 'no'); // 禁用Nginx缓冲
+            res.setHeader('X-Vercel-Cache', 'MISS'); // 强制绕过Vercel缓存
 
             // 使用流式分析方法，传入chunk处理回调
             await this.dreamService.analyzeWithAIStream(+id, userId, (chunk: string) => {
