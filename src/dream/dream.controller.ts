@@ -8,9 +8,10 @@ import {
     Post,
     Request,
     UseGuards,
-    UsePipes
+    UsePipes,
+    Res
 } from '@nestjs/common';
-import { Request as ExpressRequest } from 'express';
+import { Request as ExpressRequest, Response } from 'express';
 import { DreamService } from './dream.service';
 import { CreateDreamDto } from './dto/create-dream.dto';
 import { UpdateDreamDto } from './dto/update-dream.dto';
@@ -94,13 +95,36 @@ export class DreamController {
     }
 
     @Post('analyze/:id')
-    @ApiOperation({ summary: 'AI分析梦境' })
+    @ApiOperation({ summary: 'AI分析梦境（SSE流式输出）' })
     @ApiResponse({ status: 200, description: '分析成功' })
-    analyze(
+    async analyze(
         @Param('id') id: string,
         @Request() req: ExpressRequest,
+        @Res() res: Response
     ) {
         const userId = req.user.userId;
-        return this.dreamService.analyzeWithAI(+id, userId);
+
+        try {
+            // 设置SSE响应头
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+
+            // 使用流式分析方法，传入chunk处理回调
+            await this.dreamService.analyzeWithAIStream(+id, userId, (chunk: string) => {
+                if (chunk === '[DONE]') {
+                    res.write(`data: [DONE]\n\n`);
+                    res.end();
+                } else {
+                    res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+                }
+            });
+
+        } catch (error) {
+            console.error('AI分析失败:', error);
+            res.status(500).json({ message: '分析失败', error: error.message });
+        }
     }
 }

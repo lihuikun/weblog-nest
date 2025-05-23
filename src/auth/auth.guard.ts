@@ -10,11 +10,24 @@ export class AuthGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const token = request.headers['authorization']?.split(' ')[1]; // 获取 Bearer token
+    const authHeader = request.headers['authorization'];
 
-    if (!token) {
-      this.logger.error('无效的token：未提供token');
-      return false; // 没有 token，返回 false
+    // 更严格的token提取逻辑
+    if (!authHeader || typeof authHeader !== 'string') {
+      this.logger.error('无效的token：未提供Authorization头');
+      return false;
+    }
+
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+      this.logger.error('无效的token：Authorization格式错误，应为 "Bearer <token>"');
+      return false;
+    }
+
+    const token = parts[1];
+    if (!token || token.trim() === '') {
+      this.logger.error('无效的token：token为空');
+      return false;
     }
 
     try {

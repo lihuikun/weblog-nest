@@ -83,11 +83,39 @@ export class DreamService {
     if (!dream) {
       throw new Error('梦境记录不存在');
     }
-    // 调用本地的接口/siliconflow/chat
-    const res = await this.siliconFlowService.getChatCompletion({ userInput: `${dream.content},心情：${dream.emotion}` })
-    // 将结果更新到梦境的interpretation字段中
-    const result = await this.update(id, { interpretation: res }, userId);
-    console.log("🚀 ~ DreamService ~ res:", result, res)
+    // 调用SiliconFlow服务获取AI解读结果
+    const interpretation = await this.siliconFlowService.getChatCompletion({
+      userInput: `${dream.content},心情：${dream.emotion}`
+    });
+    console.log("🚀 ~ DreamService ~ interpretation:", interpretation)
+
+    // 将AI解读结果更新到梦境记录中
+    const result = await this.update(id, { interpretation }, userId);
+    console.log("🚀 ~ DreamService ~ AI解读完成并已保存:", result);
+    return result;
+  }
+
+  // 支持流式输出的AI分析方法
+  async analyzeWithAIStream(
+    id: number,
+    userId: number,
+    onChunk: (chunk: string) => void
+  ): Promise<Dream> {
+    const dream = await this.findOne(id, userId);
+    if (!dream) {
+      throw new Error('梦境记录不存在');
+    }
+
+    // 调用SiliconFlow服务，传入回调函数进行流式输出
+    const interpretation = await this.siliconFlowService.getChatCompletion(
+      { userInput: `${dream.content},心情：${dream.emotion}` },
+      onChunk
+    );
+    console.log("🚀 ~ DreamService ~ interpretation:", interpretation)
+
+    // 将AI解读结果更新到梦境记录中
+    const result = await this.update(id, { interpretation }, userId);
+    console.log("🚀 ~ DreamService ~ AI解读完成并已保存:", result);
     return result;
   }
 }
