@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Message } from './entities/message.entity';
 import { MessageRead } from './entities/message-read.entity';
 import { Repository } from 'typeorm';
 import { SendMessageDto } from './dto/send-message.dto';
+import { UpdateMessageDto } from './dto/update-message.dto';
 import { PaginationParams } from 'src/common/decorators/pagination.decorator';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class MessageService {
@@ -13,7 +15,27 @@ export class MessageService {
         private readonly messageRepo: Repository<Message>,
         @InjectRepository(MessageRead)
         private readonly messageReadRepo: Repository<MessageRead>,
+        private readonly userService: UserService,
     ) { }
+
+    // 丰富消息数据，添加发送者信息
+    private async enrichMessagesWithUserInfo(messages: Message[]) {
+        // 提取所有发送者ID
+        const senderIds = [...new Set(messages.map(msg => msg.senderId).filter(id => id))];
+
+        // 批量获取用户信息
+        const usersInfo = await this.userService.getUsersBasicInfo(senderIds);
+
+        // 为每条消息添加发送者信息
+        return messages.map(msg => ({
+            ...msg,
+            sender: usersInfo[msg.senderId] || {
+                id: msg.senderId,
+                nickname: '未知用户',
+                avatarUrl: ''
+            }
+        }));
+    }
 
     async sendMessage(dto: SendMessageDto, userId: number) {
         const message = this.messageRepo.create({
@@ -76,9 +98,12 @@ export class MessageService {
             }),
         );
 
+        // 丰富用户信息
+        const enrichedMessages = await this.enrichMessagesWithUserInfo(messagesWithReadStatus);
+
         // 返回分页结果
         return {
-            list: messagesWithReadStatus,
+            list: enrichedMessages,
             total,
             page,
             pageSize
@@ -120,5 +145,83 @@ export class MessageService {
 
         // 返回总未读消息数量
         return privateUnreadCount + broadcastMessages;
+    }
+
+    // 更新消息 - 权限验证由装饰器处理
+    async updateMessage(messageId: number, dto: UpdateMessageDto) {
+        // 查找消息，确保消息存在
+        const message = await this.messageRepo.findOne({
+            where: { id: messageId },
+        });
+
+        if (!message) {
+            throw new NotFoundException('消息不存在');
+        }
+
+        // 过滤掉undefined的字段，只更新传入的字段
+        const updateData = Object.keys(dto).reduce((acc, key) => {
+            if (dto[key] !== undefined) {
+                acc[key] = dto[key];
+            }
+            return acc;
+        }, {});
+
+        // 执行更新
+        await this.messageRepo.update(messageId, updateData);
+
+        // 返回更新后的消息
+        return this.messageRepo.findOne({
+            where: { id: messageId },
+        });
+    }
+
+    // 管理后台：获取所有消息 - 权限验证由装饰器处理
+    async getAllMessages(pagination: PaginationParams, type?: string) {
+        const { page, pageSize } = pagination;
+
+        const qb = this.messageRepo.createQueryBuilder('m');
+
+        // 根据类型筛选
+        if (type && ['system', 'notification', 'private'].includes(type)) {
+            qb.where('m.type = :type', { type });
+        }
+
+        // 分页和排序
+        qb.orderBy('m.createdAt', 'DESC')
+            .skip((page - 1) * pageSize)
+            .take(pageSize);
+
+        // 获取总数和数据
+        const [list, total] = await qb.getManyAndCount();
+
+        // 丰富用户信息
+        const enrichedMessages = await this.enrichMessagesWithUserInfo(list);
+
+        return {
+            list: enrichedMessages,
+            total,
+            page,
+            pageSize
+        };
+    }
+
+    // 管理后台：删除消息 - 权限验证由装饰器处理
+    async deleteMessage(messageId: number) {
+        // 查找消息，确保消息存在
+        const message = await this.messageRepo.findOne({
+            where: { id: messageId },
+        });
+
+        if (!message) {
+            throw new NotFoundException('消息不存在');
+        }
+
+        // 删除相关的阅读记录
+        await this.messageReadRepo.delete({ messageId });
+
+        // 删除消息
+        await this.messageRepo.remove(message);
+
+        return { success: true, message: '消息删除成功' };
     }
 }

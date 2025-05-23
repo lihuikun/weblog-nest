@@ -3,8 +3,8 @@ import axios from 'axios';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User, LoginType } from '../user/entities/user.entity';
-import { Repository } from 'typeorm';
+import { User, LoginType, Role } from '../user/entities/user.entity';
+import { Repository, In } from 'typeorm';
 import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -239,5 +239,60 @@ export class UserService {
     Object.assign(user, dto);
     await this.userRepository.save(user);
     return user;
+  }
+
+  // 获取用户角色 - 公共方法
+  async getUserRole(userId: number): Promise<Role> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['role']
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    return user.role;
+  }
+
+  // 获取用户完整信息 - 公共方法
+  async getUserById(userId: number): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    return user;
+  }
+
+  // 批量获取用户基础信息 - 公共方法
+  async getUsersBasicInfo(userIds: number[]): Promise<{ [key: number]: { id: number; nickname?: string; avatarUrl?: string } }> {
+    if (!userIds.length) return {};
+
+    const users = await this.userRepository.find({
+      where: { id: In(userIds.filter(id => id)) }, // 使用In操作符进行批量查询
+      select: ['id', 'nickname', 'avatarUrl']
+    });
+
+    // 转换为键值对格式便于查找
+    return users.reduce((acc, user) => {
+      acc[user.id] = {
+        id: user.id,
+        nickname: user.nickname || '未设置昵称',
+        avatarUrl: user.avatarUrl || ''
+      };
+      return acc;
+    }, {});
+  }
+
+  // 根据单个用户ID获取基础信息
+  async getUserBasicInfo(userId: number): Promise<{ id: number; nickname?: string; avatarUrl?: string } | null> {
+    if (!userId) return null;
+
+    const usersInfo = await this.getUsersBasicInfo([userId]);
+    return usersInfo[userId] || null;
   }
 }
