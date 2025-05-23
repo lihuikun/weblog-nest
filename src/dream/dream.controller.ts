@@ -29,7 +29,6 @@ import { Pagination, PaginationParams } from 'src/common/decorators/pagination.d
 
 @ApiTags('梦境记录')
 @Controller('dream')
-@UseGuards(AuthGuard)
 @ApiBearerAuth()
 export class DreamController {
     constructor(private readonly dreamService: DreamService) { }
@@ -37,6 +36,7 @@ export class DreamController {
     @Post()
     @ApiOperation({ summary: '创建梦境记录' })
     @ApiResponse({ status: 201, description: '创建成功' })
+    @UseGuards(AuthGuard)
     @UsePipes(SensitivePipe)
     create(
         @Body() createDreamDto: CreateDreamDto,
@@ -58,6 +58,7 @@ export class DreamController {
     @Get('my')
     @ApiOperation({ summary: '获取当前用户的所有梦境记录' })
     @ApiResponse({ status: 200, description: '获取成功' })
+    @UseGuards(AuthGuard)
     @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
     @ApiQuery({ name: 'pageSize', required: false, description: '每页数量', example: 10 })
     findMy(@Request() req: ExpressRequest, @Pagination() pagination: PaginationParams) {
@@ -68,6 +69,7 @@ export class DreamController {
     @Get(':id')
     @ApiOperation({ summary: '获取指定梦境记录' })
     @ApiResponse({ status: 200, description: '获取成功' })
+    @UseGuards(AuthGuard)
     findOne(@Param('id') id: string, @Request() req: ExpressRequest) {
         const userId = req.user.userId;
         return this.dreamService.findOne(+id, userId);
@@ -77,6 +79,7 @@ export class DreamController {
     @ApiOperation({ summary: '更新梦境记录' })
     @ApiResponse({ status: 200, description: '更新成功' })
     @UsePipes(SensitivePipe)
+    @UseGuards(AuthGuard)
     update(
         @Param('id') id: string,
         @Body() updateDreamDto: UpdateDreamDto,
@@ -89,6 +92,7 @@ export class DreamController {
     @Delete(':id')
     @ApiOperation({ summary: '删除梦境记录' })
     @ApiResponse({ status: 200, description: '删除成功' })
+    @UseGuards(AuthGuard)
     remove(@Param('id') id: string, @Request() req: ExpressRequest) {
         const userId = req.user.userId;
         return this.dreamService.remove(+id, userId);
@@ -99,10 +103,9 @@ export class DreamController {
     @ApiResponse({ status: 200, description: '分析成功' })
     async analyze(
         @Param('id') id: string,
-        @Request() req: ExpressRequest,
+        @Param('userId') userId: number,
         @Res() res: Response
     ) {
-        const userId = req.user.userId;
 
         try {
             // 设置SSE响应头
