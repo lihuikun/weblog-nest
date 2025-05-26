@@ -61,8 +61,6 @@ export class SiliconFlowService {
             }
 
             try {
-              console.log("🚀 ~ SiliconFlowService ~ response.data.on ~ data:", typeof dataStr)
-              // 跳过空行或无效的数据行
 
               const data = JSON.parse(dataStr);
 
@@ -71,7 +69,6 @@ export class SiliconFlowService {
                 const content = data.choices[0].delta.content;
                 fullContent += content;
                 console.log('📝 新增内容:', content);
-                // this.logger.log(`新增内容: ${content}`);
 
                 // 如果提供了回调函数，实时推送数据
                 if (onChunk) {
@@ -80,7 +77,7 @@ export class SiliconFlowService {
               }
             } catch (parseError) {
               // 忽略无法解析的数据块，继续处理下一个
-              // console.log('⚠️ 跳过无法解析的数据块:', dataStr, parseError);
+              console.log('⚠️ 跳过无法解析的数据块:', dataStr, parseError);
             }
           }
         });
