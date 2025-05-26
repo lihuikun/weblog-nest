@@ -75,7 +75,7 @@ export class SiliconFlowService {
                 }
               } catch (parseError) {
                 // 忽略无法解析的数据块，继续处理下一个
-                console.log('⚠️ 跳过无法解析的数据块:', dataStr);
+                console.log('⚠️ 跳过无法解析的数据块:', dataStr, parseError);
               }
             }
           }
