@@ -105,12 +105,10 @@ export class DreamController {
     @Sse('analyze/:id')
     @ApiOperation({ summary: 'AI分析梦境（SSE流式输出）' })
     @ApiResponse({ status: 200, description: '分析成功' })
-    @UseGuards(AuthGuard)
     analyzeStream(
         @Param('id') id: string,
-        @Request() req: ExpressRequest
+        @Param('userId') userId: number
     ): Observable<MessageEvent> {
-        const userId = req.user.userId;
         const messageSubject = new Subject<MessageEvent>();
 
         // 使用流式分析方法，传入chunk处理回调
