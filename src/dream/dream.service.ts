@@ -6,12 +6,14 @@ import { CreateDreamDto } from './dto/create-dream.dto';
 import { UpdateDreamDto } from './dto/update-dream.dto';
 import { AnalyzeDreamDto } from './dto/analyze-dream.dto';
 import { SiliconFlowService } from '../siliconflow/siliconflow.service';
+import { UserService } from '../user/user.service';
 @Injectable()
 export class DreamService {
   constructor(
     @InjectRepository(Dream)
     private dreamRepository: Repository<Dream>,
     private readonly siliconFlowService: SiliconFlowService,
+    private readonly userService: UserService,
   ) { }
 
   async create(createDreamDto: CreateDreamDto, userId: number): Promise<Dream> {
@@ -56,7 +58,17 @@ export class DreamService {
     updateDreamDto: UpdateDreamDto,
     userId: number,
   ): Promise<Dream> {
-    const dream = await this.findOne(id, userId);
+    // 根据userId判断是否是admin
+    const role = await this.userService.getUserRole(userId);
+    let dream: Dream;
+    if (role !== 'admin') {
+      dream = await this.findOne(id, userId);
+    } else {
+      // 管理员可以更新任何梦境
+      dream = await this.dreamRepository.findOne({
+        where: { id },
+      });
+    }
     if (!dream) {
       throw new Error('梦境记录不存在');
     }
