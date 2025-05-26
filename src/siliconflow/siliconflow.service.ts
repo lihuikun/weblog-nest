@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { dramPrompts } from '../prompts/dream';
 import { CreateSiliconflowDto } from './dto/create-siliconflow.dto';
 
 @Injectable()
 export class SiliconFlowService {
-
+  private readonly logger = new Logger(SiliconFlowService.name)
   async getChatCompletion(
     createSiliconflowDto: CreateSiliconflowDto,
     onChunk?: (chunk: string) => void
@@ -32,6 +32,7 @@ export class SiliconFlowService {
           responseType: 'stream',
         },
       );
+      this.logger.log(`调用硅基流动api成功: ${response}`);
 
       return new Promise((resolve, reject) => {
         let fullContent = '';
@@ -64,7 +65,8 @@ export class SiliconFlowService {
                 if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
                   const content = data.choices[0].delta.content;
                   fullContent += content;
-                  console.log('📝 新增内容:', content);
+                  // console.log('📝 新增内容:', content);
+                  this.logger.log(`新增内容: ${content}`);
 
                   // 如果提供了回调函数，实时推送数据
                   if (onChunk) {
