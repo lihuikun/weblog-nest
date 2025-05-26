@@ -60,10 +60,11 @@ export class SiliconFlowService {
 
               try {
                 const data = JSON.parse(dataStr);
+                console.log("🚀 ~ SiliconFlowService ~ response.data.on ~ data:", data)
 
                 // 提取内容增量
-                if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
-                  const content = data.choices[0].delta.content;
+                if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.reasoning_content) {
+                  const content = data.choices[0].delta.reasoning_content;
                   fullContent += content;
                   // console.log('📝 新增内容:', content);
                   this.logger.log(`新增内容: ${content}`);
