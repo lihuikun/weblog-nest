@@ -56,9 +56,11 @@ export class SiliconFlowService {
                 resolve(fullContent);
                 return;
               }
+              console.log('继续之前', dataStr)
               if (dataStr.trim() === '' || dataStr === 'data: ') {
                 continue;
               }
+              console.log('line', dataStr)
               try {
                 console.log("🚀 ~ SiliconFlowService ~ response.data.on ~ data:", typeof dataStr)
                 // 跳过空行或无效的数据行
