@@ -17,7 +17,7 @@ export class SiliconFlowService {
       const response = await axios.post(
         'https://api.siliconflow.cn/v1/chat/completions',
         {
-          model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+          model: 'Qwen/QwQ-32B',
           messages: [
             { role: 'system', content: prompt },
             { role: 'user', content: createSiliconflowDto.userInput },
