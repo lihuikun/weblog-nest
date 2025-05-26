@@ -9,7 +9,9 @@ import {
     Request,
     UseGuards,
     UsePipes,
-    Res
+    Res,
+    Sse,
+    MessageEvent
 } from '@nestjs/common';
 import { Request as ExpressRequest, Response } from 'express';
 import { DreamService } from './dream.service';
@@ -26,6 +28,8 @@ import {
     ApiQuery,
 } from '@nestjs/swagger';
 import { Pagination, PaginationParams } from 'src/common/decorators/pagination.decorator';
+import { Observable, Subject, fromEvent } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @ApiTags('梦境记录')
 @Controller('dream')
@@ -98,36 +102,31 @@ export class DreamController {
         return this.dreamService.remove(+id, userId);
     }
 
-    @Post('analyze/:id')
+    @Sse('analyze/:id')
     @ApiOperation({ summary: 'AI分析梦境（SSE流式输出）' })
     @ApiResponse({ status: 200, description: '分析成功' })
-    async analyze(
+    @UseGuards(AuthGuard)
+    analyzeStream(
         @Param('id') id: string,
-        @Param('userId') userId: number,
-        @Res() res: Response
-    ) {
+        @Request() req: ExpressRequest
+    ): Observable<MessageEvent> {
+        const userId = req.user.userId;
+        const messageSubject = new Subject<MessageEvent>();
 
-        try {
-            // 设置SSE响应头
-            res.setHeader('Content-Type', 'text/event-stream');
-            res.setHeader('Cache-Control', 'no-cache');
-            res.setHeader('Connection', 'keep-alive');
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
-
-            // 使用流式分析方法，传入chunk处理回调
-            await this.dreamService.analyzeWithAIStream(+id, userId, (chunk: string) => {
-                if (chunk === '[DONE]') {
-                    res.write(`data: [DONE]\n\n`);
-                    res.end();
-                } else {
-                    res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
-                }
-            });
-
-        } catch (error) {
+        // 使用流式分析方法，传入chunk处理回调
+        this.dreamService.analyzeWithAIStream(+id, userId, (chunk: string) => {
+            if (chunk === '[DONE]') {
+                messageSubject.next({ data: { done: true } });
+                messageSubject.complete();
+            } else {
+                messageSubject.next({ data: { content: chunk } });
+            }
+        }).catch(error => {
             console.error('AI分析失败:', error);
-            res.status(500).json({ message: '分析失败', error: error.message });
-        }
+            messageSubject.next({ data: { error: error.message } });
+            messageSubject.complete();
+        });
+
+        return messageSubject.asObservable();
     }
 }
