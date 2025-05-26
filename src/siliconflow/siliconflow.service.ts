@@ -13,7 +13,6 @@ export class SiliconFlowService {
     try {
       const prompt = dramPrompts;
       console.log("🚀 ~ SiliconFlowService ~ getChatCompletion ~ prompt:", createSiliconflowDto.userInput)
-
       const response = await axios.post(
         'https://api.siliconflow.cn/v1/chat/completions',
         {
@@ -59,15 +58,15 @@ export class SiliconFlowService {
               }
 
               try {
+                console.log("🚀 ~ SiliconFlowService ~ response.data.on ~ data:", typeof dataStr)
                 const data = JSON.parse(dataStr);
-                console.log("🚀 ~ SiliconFlowService ~ response.data.on ~ data:", data)
 
                 // 提取内容增量
-                if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.reasoning_content) {
-                  const content = data.choices[0].delta.reasoning_content;
+                if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                  const content = data.choices[0].delta.content;
                   fullContent += content;
                   // console.log('📝 新增内容:', content);
-                  this.logger.log(`新增内容: ${content}`);
+                  // this.logger.log(`新增内容: ${content}`);
 
                   // 如果提供了回调函数，实时推送数据
                   if (onChunk) {
@@ -76,7 +75,7 @@ export class SiliconFlowService {
                 }
               } catch (parseError) {
                 // 忽略无法解析的数据块，继续处理下一个
-                console.log('⚠️ 跳过无法解析的数据块:', dataStr, parseError);
+                // console.log('⚠️ 跳过无法解析的数据块:', dataStr, parseError);
               }
             }
           }
