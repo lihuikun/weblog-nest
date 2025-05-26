@@ -28,7 +28,7 @@ import {
     ApiQuery,
 } from '@nestjs/swagger';
 import { Pagination, PaginationParams } from 'src/common/decorators/pagination.decorator';
-import { Observable, Subject, fromEvent } from 'rxjs';
+import { Observable, Subject, fromEvent, interval } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 @ApiTags('梦境记录')
@@ -126,5 +126,12 @@ export class DreamController {
         });
 
         return messageSubject.asObservable();
+    }
+
+    @Sse('test/:id')
+    testStream(@Param('id') id: string): Observable<MessageEvent> {
+        return interval(1000).pipe(
+            map(i => ({ data: { content: `测试消息 ${i}` } }))
+        );
     }
 }
