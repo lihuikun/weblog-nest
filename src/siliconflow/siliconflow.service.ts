@@ -16,7 +16,7 @@ export class SiliconFlowService {
       const response = await axios.post(
         'https://api.siliconflow.cn/v1/chat/completions',
         {
-          model: 'Qwen/QwQ-32B',
+          model: 'Qwen/Qwen2.5-VL-72B-Instruct',
           messages: [
             { role: 'system', content: prompt },
             { role: 'user', content: createSiliconflowDto.userInput },
@@ -38,51 +38,49 @@ export class SiliconFlowService {
 
         response.data.on('data', (chunk: Buffer) => {
           const chunkStr = chunk.toString();
+          if (chunkStr.trim() === '' || chunkStr === 'data: ') {
+            return
+          }
           console.log('收到chunk:', chunkStr);
-
           // 处理SSE格式的数据
           const lines = chunkStr.split('\n');
 
           for (const line of lines) {
+            let dataStr = line;
             if (line.startsWith('data: ')) {
-              const dataStr = line.slice(6); // 移除 "data: " 前缀
+              dataStr = line.slice(6); // 移除 "data: " 前缀
+            }
+            // 检查是否是结束标记
+            if (dataStr.trim() === '[DONE]') {
+              console.log('🎉 流式输出完成，完整内容:', fullContent);
+              if (onChunk) {
+                onChunk('[DONE]'); // 通知流结束
+              }
+              resolve(fullContent);
+              return;
+            }
 
-              // 检查是否是结束标记
-              if (dataStr.trim() === '[DONE]') {
-                console.log('🎉 流式输出完成，完整内容:', fullContent);
+            try {
+              console.log("🚀 ~ SiliconFlowService ~ response.data.on ~ data:", typeof dataStr)
+              // 跳过空行或无效的数据行
+
+              const data = JSON.parse(dataStr);
+
+              // 提取内容增量
+              if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                const content = data.choices[0].delta.content;
+                fullContent += content;
+                console.log('📝 新增内容:', content);
+                // this.logger.log(`新增内容: ${content}`);
+
+                // 如果提供了回调函数，实时推送数据
                 if (onChunk) {
-                  onChunk('[DONE]'); // 通知流结束
+                  onChunk(content);
                 }
-                resolve(fullContent);
-                return;
               }
-              console.log('继续之前', dataStr)
-              if (dataStr.trim() === '' || dataStr === 'data: ') {
-                continue;
-              }
-              console.log('line', dataStr)
-              try {
-                console.log("🚀 ~ SiliconFlowService ~ response.data.on ~ data:", typeof dataStr)
-                // 跳过空行或无效的数据行
-
-                const data = JSON.parse(dataStr);
-
-                // 提取内容增量
-                if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
-                  const content = data.choices[0].delta.content;
-                  fullContent += content;
-                  console.log('📝 新增内容:', content);
-                  // this.logger.log(`新增内容: ${content}`);
-
-                  // 如果提供了回调函数，实时推送数据
-                  if (onChunk) {
-                    onChunk(content);
-                  }
-                }
-              } catch (parseError) {
-                // 忽略无法解析的数据块，继续处理下一个
-                // console.log('⚠️ 跳过无法解析的数据块:', dataStr, parseError);
-              }
+            } catch (parseError) {
+              // 忽略无法解析的数据块，继续处理下一个
+              // console.log('⚠️ 跳过无法解析的数据块:', dataStr, parseError);
             }
           }
         });
