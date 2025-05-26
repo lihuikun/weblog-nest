@@ -59,18 +59,21 @@ export class SiliconFlowService {
 
               try {
                 console.log("🚀 ~ SiliconFlowService ~ response.data.on ~ data:", typeof dataStr)
-                const data = JSON.parse(dataStr);
+                // 跳过空行或无效的数据行
+                if (dataStr.trim() === '' || dataStr === 'data: ') {
+                  const data = JSON.parse(dataStr);
 
-                // 提取内容增量
-                if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
-                  const content = data.choices[0].delta.content;
-                  fullContent += content;
-                  // console.log('📝 新增内容:', content);
-                  // this.logger.log(`新增内容: ${content}`);
+                  // 提取内容增量
+                  if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                    const content = data.choices[0].delta.content;
+                    fullContent += content;
+                    // console.log('📝 新增内容:', content);
+                    // this.logger.log(`新增内容: ${content}`);
 
-                  // 如果提供了回调函数，实时推送数据
-                  if (onChunk) {
-                    onChunk(content);
+                    // 如果提供了回调函数，实时推送数据
+                    if (onChunk) {
+                      onChunk(content);
+                    }
                   }
                 }
               } catch (parseError) {
