@@ -44,6 +44,7 @@
     "mysql": "^2.18.1",
     "mysql2": "^3.12.0",
     "node-cron": "^3.0.3",
+    "openai": "^4.103.0",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "puppeteer": "^24.3.0",

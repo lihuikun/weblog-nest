@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res } from '@nestjs/common';
+import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
 import { SparkService } from './spark.service';
 import { Response } from 'express';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
@@ -14,8 +14,18 @@ export class SparkController {
     description: '梦境解读的接口',
     type: CreateSparkDto,
   })
-  async chat(@Body() createSparkDto: CreateSparkDto) {
-    return await this.sparkService.getChatCompletion(createSparkDto);
-  }
+  async chat(@Body() createSparkDto: CreateSparkDto, @Res() res: Response) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.status(HttpStatus.OK);
 
+    await this.sparkService.getChatCompletion(createSparkDto, (chunk: string) => {
+      if (chunk === '[DONE]') {
+        res.end();
+      } else {
+        res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+      }
+    });
+  }
 }
