@@ -7,6 +7,7 @@ import { UpdateDreamDto } from './dto/update-dream.dto';
 import { AnalyzeDreamDto } from './dto/analyze-dream.dto';
 import { SiliconFlowService } from '../siliconflow/siliconflow.service';
 import { UserService } from '../user/user.service';
+import { SparkService } from '../spark/spark.service';
 @Injectable()
 export class DreamService {
   constructor(
@@ -14,6 +15,7 @@ export class DreamService {
     private dreamRepository: Repository<Dream>,
     private readonly siliconFlowService: SiliconFlowService,
     private readonly userService: UserService,
+    private readonly sparkService: SparkService
   ) { }
 
   async create(createDreamDto: CreateDreamDto, userId: number): Promise<Dream> {
@@ -96,7 +98,7 @@ export class DreamService {
       throw new Error('梦境记录不存在');
     }
     // 调用SiliconFlow服务获取AI解读结果
-    const interpretation = await this.siliconFlowService.getChatCompletion({
+    const interpretation = await this.sparkService.getChatCompletion({
       userInput: `${dream.content},心情：${dream.emotion}`
     });
     console.log("🚀 ~ DreamService ~ interpretation:", interpretation)
@@ -119,7 +121,7 @@ export class DreamService {
     }
 
     // 调用SiliconFlow服务，传入回调函数进行流式输出
-    const interpretation = await this.siliconFlowService.getChatCompletion(
+    const interpretation = await this.sparkService.getChatCompletion(
       { userInput: `${dream.content},心情：${dream.emotion}` },
       onChunk
     );

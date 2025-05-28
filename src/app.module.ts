@@ -22,6 +22,7 @@ import { SiliconflowModule } from './siliconflow/siliconflow.module';
 import { MessageModule } from './message/message.module';
 import { DailyQuoteModule } from './daily-quote/daily-quote.module';
 import { JuejinModule } from './juejin/juejin.module';
+import { SparkModule } from './spark/spark.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -51,6 +52,7 @@ import { JuejinModule } from './juejin/juejin.module';
     MessageModule,
     DailyQuoteModule,
     JuejinModule,
+    SparkModule,
   ],
   controllers: [AppController],
   providers: [
