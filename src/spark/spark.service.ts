@@ -13,7 +13,8 @@ export class SparkService {
     constructor() {
         this.openai = new OpenAI({
             apiKey: this.apiKey,
-            baseURL: 'https://spark-api-open.xf-yun.com/v1'
+            // baseURL: 'https://spark-api-open.xf-yun.com/v1'
+            baseURL: 'https://api.hunyuan.cloud.tencent.com/v1'
         })
     }
 
@@ -25,7 +26,7 @@ export class SparkService {
             const prompt = dramPrompts;
 
             const stream = await this.openai.chat.completions.create({
-                model: 'lite',
+                model: 'hunyuan-lite',
                 messages: [
                     { role: 'system', content: prompt },
                     { role: 'user', content: createSparkDto.userInput },
