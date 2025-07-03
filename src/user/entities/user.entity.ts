@@ -44,6 +44,10 @@ export class User {
   @Column({ type: 'enum', enum: Role, default: Role.USER, nullable: false })
   role: Role;
 
+  // 会员状态
+  @Column({ type: 'boolean', default: false })
+  isPremium: boolean;
+
   @CreateDateColumn({ type: 'timestamp' })
   createTime?: Date;
 

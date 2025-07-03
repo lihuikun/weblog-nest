@@ -24,6 +24,8 @@ import { DailyQuoteModule } from './daily-quote/daily-quote.module';
 import { JuejinModule } from './juejin/juejin.module';
 import { SparkModule } from './spark/spark.module';
 import { WechatModule } from './wechat/wechat.module';
+import { InterviewModule } from './interview/interview.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -55,6 +57,7 @@ import { WechatModule } from './wechat/wechat.module';
     JuejinModule,
     SparkModule,
     WechatModule,
+    InterviewModule,
   ],
   controllers: [AppController],
   providers: [
