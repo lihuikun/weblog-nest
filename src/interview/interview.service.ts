@@ -4,12 +4,15 @@ import { Repository } from 'typeorm';
 import { Interview } from './entities/interview.entity';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
+import { User, Role } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class InterviewService {
   constructor(
     @InjectRepository(Interview)
     private readonly interviewRepository: Repository<Interview>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(createInterviewDto: CreateInterviewDto): Promise<Interview> {
@@ -22,8 +25,10 @@ export class InterviewService {
     pageSize: number = 10,
     categoryId?: number,
     difficulty?: number,
+    requirePremium?: boolean,
+    userId?: number,
   ): Promise<{
-    items: Partial<Interview>[];
+    list: any[];
     total: number;
     page: number;
     pageSize: number;
@@ -40,6 +45,11 @@ export class InterviewService {
       queryBuilder.andWhere('interview.difficulty = :difficulty', { difficulty });
     }
 
+    // 会员筛选
+    if (requirePremium !== undefined) {
+      queryBuilder.andWhere('interview.requirePremium = :requirePremium', { requirePremium: requirePremium ? 1 : 0 });
+    }
+
     // 排序
     queryBuilder.orderBy('interview.createTime', 'DESC');
 
@@ -50,21 +60,18 @@ export class InterviewService {
       .take(pageSize)
       .getMany();
 
-    // 移除答案，只在专门的获取答案接口返回
-    const itemsWithoutAnswers = items.map(item => {
-      const { answer, ...rest } = item;
-      return rest;
-    });
+    // 处理答案显示逻辑
+    const processedItems = await this.processInterviewAnswers(items, userId);
 
     return {
-      items: itemsWithoutAnswers,
+      list: processedItems,
       total,
       page,
       pageSize,
     };
   }
 
-  async findOne(id: number): Promise<Partial<Interview>> {
+  async findOne(id: number, userId?: number): Promise<any> {
     const interview = await this.interviewRepository.findOne({
       where: { id },
     });
@@ -72,33 +79,65 @@ export class InterviewService {
     if (!interview) {
       throw new NotFoundException(`面试题 #${id} 不存在`);
     }
-
-    // 移除答案，只在专门的获取答案接口返回
-    const { answer, ...interviewWithoutAnswer } = interview;
     
     // 增加浏览次数
     await this.interviewRepository.increment({ id }, 'viewCount', 1);
-    interviewWithoutAnswer.viewCount += 1;
+    interview.viewCount += 1;
 
-    return interviewWithoutAnswer;
+    // 处理答案显示逻辑
+    const [processedInterview] = await this.processInterviewAnswers([interview], userId);
+    return processedInterview;
   }
 
-  async getAnswer(id: number, isPremium: boolean): Promise<string | null> {
-    const interview = await this.interviewRepository.findOne({
-      where: { id },
-      select: ['answer', 'requirePremium'],
+  // 处理面试题答案显示逻辑
+  private async processInterviewAnswers(interviews: Interview[], userId?: number): Promise<any[]> {
+    // 如果没有用户ID，所有需要会员的题目都不返回答案
+    console.log('userId', userId)
+    if (!userId) {
+      return interviews.map(interview => {
+        if (interview.requirePremium) {
+          return {
+            ...interview,
+            answer: '该题目是会员专属，请关注微信公众号"前端的日常"，找客服成为会员',
+          };
+        }
+        return interview;
+      });
+    }
+
+    // 获取用户信息
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'isPremium', 'role'],
     });
 
-    if (!interview) {
-      throw new NotFoundException(`面试题 #${id} 不存在`);
+    // 如果用户不存在，当作非会员处理
+    if (!user) {
+      return interviews.map(interview => {
+        if (interview.requirePremium) {
+          return {
+            ...interview,
+            answer: '该题目是会员专属，请关注微信公众号"前端的日常"，找客服成为会员',
+          };
+        }
+        return interview;
+      });
     }
 
-    // 如果需要会员权限，但用户不是会员，则不返回答案
-    if (interview.requirePremium && !isPremium) {
-      return null;
-    }
-
-    return interview.answer;
+    // 如果是管理员或会员，可以看所有答案
+    const canSeeAllAnswers = user.role === Role.ADMIN || user.isPremium;
+    console.log("🚀 ~ InterviewService ~ canSeeAllAnswers:", canSeeAllAnswers)
+    return interviews.map(interview => {
+      // 如果需要会员，且用户不是管理员也不是会员
+      if (interview.requirePremium && !canSeeAllAnswers) {
+        return {
+          ...interview,
+          answer: '该题目是会员专属，请关注微信公众号"前端的日常"，找客服成为会员',
+        };
+      }
+      // 其他情况保持答案不变
+      return interview;
+    });
   }
 
   async update(
