@@ -25,6 +25,7 @@ import { JuejinModule } from './juejin/juejin.module';
 import { SparkModule } from './spark/spark.module';
 import { WechatModule } from './wechat/wechat.module';
 import { InterviewModule } from './interview/interview.module';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { InterviewModule } from './interview/interview.module';
     SparkModule,
     WechatModule,
     InterviewModule,
+    VerificationModule,
   ],
   controllers: [AppController],
   providers: [

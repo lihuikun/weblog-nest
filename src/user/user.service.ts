@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, Logger, BadRequestException } from '@nestjs/common';
 import axios from 'axios';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -10,6 +10,8 @@ import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { CreateGithubLoginDto } from './dto/github-login.dto';
+import { VerificationService } from '../verification/verification.service';
+import { VerificationType } from '../verification/entities/verification.entity';
 
 @Injectable()
 export class UserService {
@@ -19,6 +21,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly verificationService: VerificationService,
   ) { }
 
   // 统一生成JWT的方法
@@ -37,25 +40,46 @@ export class UserService {
   }
 
   async emailRegister(createEmailUserDto: CreateEmailUserDto): Promise<User> {
+    const { email, password, code, nickname, avatarUrl } = createEmailUserDto;
+    
     // 检查邮箱是否已存在
     const existingUser = await this.userRepository.findOne({
-      where: { email: createEmailUserDto.email },
+      where: { email },
     });
 
     if (existingUser) {
       throw new ConflictException('该邮箱已被注册');
     }
+    
     // 添加正则表达式
     const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if (!emailRegex.test(createEmailUserDto.email)) {
+    if (!emailRegex.test(email)) {
       throw new ConflictException('邮箱格式不正确');
     }
+    
+    // 验证验证码
+    try {
+      const isVerified = await this.verificationService.verifyCode({
+        email,
+        code,
+        type: VerificationType.EMAIL_REGISTRATION,
+      });
+      
+      if (!isVerified) {
+        throw new BadRequestException('验证码无效');
+      }
+    } catch (error) {
+      throw new BadRequestException(error.message || '验证码验证失败');
+    }
+    
     // 创建新用户
     const salt = crypto.randomBytes(16).toString('hex');
-    const hashedPassword = this.hashPassword(createEmailUserDto.password, salt);
+    const hashedPassword = this.hashPassword(password, salt);
     const user = this.userRepository.create({
-      ...createEmailUserDto,
+      email,
       password: `${salt}:${hashedPassword}`,
+      nickname,
+      avatarUrl,
       loginType: LoginType.EMAIL,
     });
 
