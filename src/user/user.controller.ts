@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Put, Get, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Param, Put, Get, Delete, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ApiBody, ApiOperation, ApiParam, ApiTags, ApiQuery } from '@nestjs/swagger';
@@ -18,8 +18,12 @@ export class UserController {
   @ApiOperation({ summary: '获取用户分页列表' })
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
   @ApiQuery({ name: 'pageSize', required: false, description: '每页数量', example: 10 })
-  async getUserList(@Pagination() pagination: PaginationParams) {
-    return this.authService.getUserList(pagination.page, pagination.pageSize);
+  @ApiQuery({ name: 'keyword', required: false, description: '搜索关键词（支持昵称和邮箱模糊搜索）', example: '张三' })
+  async getUserList(
+    @Pagination() pagination: PaginationParams,
+    @Query('keyword') keyword?: string
+  ) {
+    return this.authService.getUserList(pagination.page, pagination.pageSize, keyword);
   }
 
   @Delete(':id')

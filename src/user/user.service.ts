@@ -239,12 +239,21 @@ export class UserService {
   }
 
   // 分页获取用户列表
-  async getUserList(page: number = 1, pageSize: number = 10) {
-    const [list, total] = await this.userRepository.findAndCount({
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      order: { id: 'DESC' },
-    });
+  async getUserList(page: number = 1, pageSize: number = 10, keyword?: string) {
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+    
+    // 如果有关键词，添加模糊搜索条件
+    if (keyword) {
+      queryBuilder.where('user.nickname LIKE :keyword', { keyword: `%${keyword}%` })
+        .orWhere('user.email LIKE :keyword', { keyword: `%${keyword}%` });
+    }
+    
+    // 分页和排序
+    queryBuilder.skip((page - 1) * pageSize)
+      .take(pageSize)
+      .orderBy('user.id', 'DESC');
+    
+    const [list, total] = await queryBuilder.getManyAndCount();
     return { list, total, page, pageSize };
   }
 

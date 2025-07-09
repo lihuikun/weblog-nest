@@ -91,6 +91,7 @@ export class InterviewService {
 
   // 处理面试题答案显示逻辑
   private async processInterviewAnswers(interviews: Interview[], userId?: number): Promise<any[]> {
+    const answer = '该内容为VIP专享。欢迎关注微信公众号“前端的日常”，联系客服即可9.9元开通终身VIP，享受每日更新的面试题库~'
     // 如果没有用户ID，所有需要会员的题目都不返回答案
     console.log('userId', userId)
     if (!userId) {
@@ -98,7 +99,7 @@ export class InterviewService {
         if (interview.requirePremium) {
           return {
             ...interview,
-            answer: '该题目是会员专属，请关注微信公众号"前端的日常"，找客服成为会员',
+            answer
           };
         }
         return interview;
@@ -117,7 +118,7 @@ export class InterviewService {
         if (interview.requirePremium) {
           return {
             ...interview,
-            answer: '该题目是会员专属，请关注微信公众号"前端的日常"，找客服成为会员',
+            answer,
           };
         }
         return interview;
@@ -132,7 +133,7 @@ export class InterviewService {
       if (interview.requirePremium && !canSeeAllAnswers) {
         return {
           ...interview,
-          answer: '该题目是会员专属，请关注微信公众号"前端的日常"，找客服成为会员',
+          answer,
         };
       }
       // 其他情况保持答案不变
