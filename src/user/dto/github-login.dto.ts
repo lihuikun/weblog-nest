@@ -6,5 +6,9 @@ export class CreateGithubLoginDto {
     @IsString()
     @IsNotEmpty()
     code: string;
+    @ApiProperty({ description: 'GitHub应用类型', default: 'default' })
+    @IsString()
+    @IsNotEmpty()
+    type: string;
 }
 

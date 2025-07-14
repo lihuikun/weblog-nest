@@ -23,7 +23,18 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly verificationService: VerificationService,
   ) { }
-
+  private readonly githubAppConfigs = {
+    default: {
+      redirect_uri: process.env.GITHUB_CALLBACK_URL,
+      client_id: process.env.GITHUB_CLIENT_ID,
+      client_secret: process.env.GITHUB_CLIENT_SECRET,
+    },
+    'js-daily': {
+      redirect_uri: process.env.GITHUB_JS_DAILY_CALLBACK_URL,
+      client_id: process.env.GITHUB_JS_DAILY_CLIENT_ID,
+      client_secret: process.env.GITHUB_JS_DAILY_CLIENT_SECRET,
+    },
+  }
   // 统一生成JWT的方法
   private generateToken(payload: any): string {
     try {
@@ -174,11 +185,14 @@ export class UserService {
   }
 
   async githubLogin(createGithubLoginDto: CreateGithubLoginDto): Promise<User> {
-    const { code } = createGithubLoginDto;
+    const { code,type='default' } = createGithubLoginDto;
+    console.log('type', type)
+    const config = this.githubAppConfigs[type];
+
     const response = await axios.post('https://github.com/login/oauth/access_token', {
-      redirect_uri: process.env.GITHUB_CALLBACK_URL,
-      client_id: process.env.GITHUB_CLIENT_ID,
-      client_secret: process.env.GITHUB_CLIENT_SECRET,
+      redirect_uri: config.redirect_uri,
+      client_id: config.client_id,
+      client_secret: config.client_secret,
       code,
     }, {
       headers: { 'accept': 'application/json' },
