@@ -91,7 +91,11 @@ export class InterviewService {
 
   // 处理面试题答案显示逻辑
   private async processInterviewAnswers(interviews: Interview[], userId?: number): Promise<any[]> {
-    const answer = '该内容为VIP专享。欢迎关注微信公众号“前端的日常”，联系客服即可9.9元开通终身VIP，享受每日更新的面试题库~'
+    const answer = `该内容为VIP专享,联系客服即可9.9元开通终身VIP，享受每日更新的面试题库~
+    <div style="display: flex;justify-content: center;align-items: center;">
+      <img style="width: 200px;" src="https://gitee.com/lihuikun1/pic-bed/raw/master/images/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20250715093516.jpg" alt="">
+    </div>
+    `
     // 如果没有用户ID，所有需要会员的题目都不返回答案
     console.log('userId', userId)
     if (!userId) {
