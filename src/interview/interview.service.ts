@@ -5,6 +5,8 @@ import { Interview } from './entities/interview.entity';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 import { User, Role } from 'src/user/entities/user.entity';
+import { LikeService } from 'src/like/like.service';
+import { FavoriteService } from 'src/favorite/favorite.service';
 
 @Injectable()
 export class InterviewService {
@@ -13,6 +15,8 @@ export class InterviewService {
     private readonly interviewRepository: Repository<Interview>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly likeService: LikeService,
+    private readonly favoriteService: FavoriteService,
   ) {}
 
   async create(createInterviewDto: CreateInterviewDto): Promise<Interview> {
@@ -23,7 +27,7 @@ export class InterviewService {
   async findAll(
     page: number = 1,
     pageSize: number = 10,
-    categoryId?: number,
+    categoryId?: number | string,
     difficulty?: number,
     requirePremium?: boolean,
     userId?: number,
@@ -33,6 +37,10 @@ export class InterviewService {
     page: number;
     pageSize: number;
   }> {
+    // 如果 categoryId === -1，直接返回用户收藏的面试题
+    if (categoryId === "-1" && userId) {
+      return this.favoriteService.getUserFavoriteInterviews(userId, page, pageSize);
+    }
     const queryBuilder = this.interviewRepository.createQueryBuilder('interview');
 
     // 分类筛选
@@ -60,7 +68,7 @@ export class InterviewService {
       .take(pageSize)
       .getMany();
 
-    // 处理答案显示逻辑
+    // 处理答案显示逻辑和点赞收藏状态
     const processedItems = await this.processInterviewAnswers(items, userId);
 
     return {
@@ -84,29 +92,45 @@ export class InterviewService {
     await this.interviewRepository.increment({ id }, 'viewCount', 1);
     interview.viewCount += 1;
 
-    // 处理答案显示逻辑
+    // 处理答案显示逻辑和点赞收藏状态
     const [processedInterview] = await this.processInterviewAnswers([interview], userId);
     return processedInterview;
   }
 
-  // 处理面试题答案显示逻辑
+  // 处理面试题答案显示逻辑和用户交互信息
   private async processInterviewAnswers(interviews: Interview[], userId?: number): Promise<any[]> {
     const answer = `该内容为VIP专享，联系客服即可10.9元开通终身VIP，享受每日更新的面试题库，温馨提示:随着题库数量增加会逐步进行涨价,早买早享受哦~
     <div style="display: flex;justify-content: center;align-items: center;">
       <img style="width: 200px;" src="https://gitee.com/lihuikun1/pic-bed/raw/master/images/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20250715093516.jpg" alt="">
     </div>
-    `
+    `;
+    
+    // 获取面试题ID列表
+    const interviewIds = interviews.map(interview => interview.id);
+    
+    // 如果有登录用户，获取点赞和收藏状态
+    let likeStatusMap = new Map<number, boolean>();
+    let favoriteStatusMap = new Map<number, boolean>();
+    
+    if (userId && interviewIds.length > 0) {
+      likeStatusMap = await this.likeService.getInterviewLikeStatus(userId, interviewIds);
+      favoriteStatusMap = await this.favoriteService.getInterviewFavoriteStatus(userId, interviewIds);
+    }
+
     // 如果没有用户ID，所有需要会员的题目都不返回答案
-    console.log('userId', userId)
     if (!userId) {
       return interviews.map(interview => {
+        const processed = { 
+          ...interview,
+          isLiked: false,
+          isFavorited: false
+        };
+        
         if (interview.requirePremium) {
-          return {
-            ...interview,
-            answer
-          };
+          processed.answer = answer;
         }
-        return interview;
+        
+        return processed;
       });
     }
 
@@ -119,29 +143,36 @@ export class InterviewService {
     // 如果用户不存在，当作非会员处理
     if (!user) {
       return interviews.map(interview => {
+        const processed = { 
+          ...interview,
+          isLiked: likeStatusMap.has(interview.id),
+          isFavorited: favoriteStatusMap.has(interview.id)
+        };
+        
         if (interview.requirePremium) {
-          return {
-            ...interview,
-            answer,
-          };
+          processed.answer = answer;
         }
-        return interview;
+        
+        return processed;
       });
     }
 
     // 如果是管理员或会员，可以看所有答案
     const canSeeAllAnswers = user.role === Role.ADMIN || user.isPremium;
-    console.log("🚀 ~ InterviewService ~ canSeeAllAnswers:", canSeeAllAnswers)
+    
     return interviews.map(interview => {
+      const processed = { 
+        ...interview,
+        isLiked: likeStatusMap.has(interview.id),
+        isFavorited: favoriteStatusMap.has(interview.id)
+      };
+      
       // 如果需要会员，且用户不是管理员也不是会员
       if (interview.requirePremium && !canSeeAllAnswers) {
-        return {
-          ...interview,
-          answer,
-        };
+        processed.answer = answer;
       }
-      // 其他情况保持答案不变
-      return interview;
+      
+      return processed;
     });
   }
 

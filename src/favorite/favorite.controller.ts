@@ -2,44 +2,41 @@ import {
   Controller,
   Get,
   Post,
-  Body,
-  Patch,
+  UseGuards,
+  Req,
   Param,
-  Delete,
+  ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { FavoriteService } from './favorite.service';
-import { CreateFavoriteDto } from './dto/create-favorite.dto';
-import { UpdateFavoriteDto } from './dto/update-favorite.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('收藏')
 @Controller('favorite')
 export class FavoriteController {
   constructor(private readonly favoriteService: FavoriteService) {}
 
-  @Post()
-  create(@Body() createFavoriteDto: CreateFavoriteDto) {
-    return this.favoriteService.create(createFavoriteDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.favoriteService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.favoriteService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateFavoriteDto: UpdateFavoriteDto,
+  @Post('interview/:id')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '收藏面试题' })
+  toggleInterviewFavorite(
+    @Req() req: { user: { userId: number } },
+    @Param('id', ParseIntPipe) interviewId: number,
   ) {
-    return this.favoriteService.update(+id, updateFavoriteDto);
+    const userId = req.user.userId;
+    return this.favoriteService.toggleInterviewFavorite(userId, interviewId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.favoriteService.remove(+id);
+  @Get('interviews')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '获取用户收藏的面试题' })
+  getUserFavoriteInterviews(
+    @Req() req: { user: { userId: number } },
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+  ) {
+    const userId = req.user.userId;
+    return this.favoriteService.getUserFavoriteInterviews(userId, page, pageSize);
   }
 }

@@ -5,15 +5,25 @@ import {
   CreateDateColumn,
   ManyToOne,
 } from 'typeorm';
-import { Article } from '../../article/entities/article.entity';
+import { Interview } from '../../interview/entities/interview.entity';
+import { User } from '../../user/entities/user.entity';
 
 @Entity()
 export class Favorite {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Article, (article) => article.favorites)
-  article: Article;
+  @Column()
+  interviewId: number;
+
+  @Column()
+  userId: number;
+
+  @ManyToOne(() => Interview, (interview) => interview.favorites)
+  interview: Interview;
+
+  @ManyToOne(() => User, (user) => user.id)
+  user: User;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

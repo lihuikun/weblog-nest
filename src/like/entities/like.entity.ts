@@ -5,8 +5,8 @@ import {
   CreateDateColumn,
   ManyToOne,
 } from 'typeorm';
-import { Article } from '../../article/entities/article.entity';
 import { User } from 'src/user/entities/user.entity';
+import { Interview } from '../../interview/entities/interview.entity';
 
 @Entity()
 export class Like {
@@ -14,13 +14,13 @@ export class Like {
   id: number;
 
   @Column()
-  articleId: number;
+  interviewId: number;
 
   @Column()
   userId: number;
 
-  @ManyToOne(() => Article, (article) => article.likes)
-  article: Article;
+  @ManyToOne(() => Interview, (interview) => interview.likes)
+  interview: Interview;
 
   @ManyToOne(() => User, (user) => user.id)
   user: User;

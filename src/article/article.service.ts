@@ -107,8 +107,6 @@ export class ArticleService {
           content: reply.content,
         })),
       })),
-      likes: article.likes.map((like) => like.id), // 只返回 like 的 ID，避免加载不必要的信息
-      favorites: article.favorites.map((favorite) => favorite.id), // 同样只返回 favorite 的 ID
     };
 
     return res as any;
@@ -121,7 +119,7 @@ export class ArticleService {
     await this.articleRepository.update(id, updateArticleDto);
     const updatedArticle = await this.articleRepository.findOne({
       where: { id },
-      relations: ['comments', 'likes', 'favorites'],
+      relations: ['comments'],
     });
     if (!updatedArticle) {
       throw new Error(`Article with ID ${id} not found`);

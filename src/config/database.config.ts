@@ -12,7 +12,7 @@ export const databaseConfig: TypeOrmModuleOptions = {
   database: process.env.DATABASE_NAME,
   entities: [__dirname + '/../**/*.entity.{js,ts}'], // 实体文件路径
   synchronize: true, // 是否自动同步数据库，
-  logging: true, // 开启日志输出
+  // logging: true, // 开启日志输出
   // 设置为utf8mb4字符集
   charset: 'utf8mb4',
   extra: {

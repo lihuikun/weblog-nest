@@ -7,8 +7,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Comment } from '../../comment/entities/comment.entity';
-import { Like } from '../../like/entities/like.entity';
-import { Favorite } from '../../favorite/entities/favorite.entity';
 
 @Entity()
 export class Article {
@@ -35,12 +33,6 @@ export class Article {
 
   @OneToMany(() => Comment, (comment) => comment.article, { cascade: true })
   comments?: Comment[];
-
-  @OneToMany(() => Like, (like) => like.article, { cascade: true })
-  likes?: Like[];
-
-  @OneToMany(() => Favorite, (favorite) => favorite.article, { cascade: true })
-  favorites: Favorite[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createTime?: Date;

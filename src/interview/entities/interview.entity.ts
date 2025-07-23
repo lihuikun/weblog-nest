@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Like } from '../../like/entities/like.entity';
+import { Favorite } from '../../favorite/entities/favorite.entity';
 
 @Entity()
 export class Interview {
@@ -35,9 +38,18 @@ export class Interview {
   @Column({ type: 'int', default: 0 })
   likeCount: number;
 
+  @Column({ type: 'int', default: 0 })
+  favoriteCount: number;
+
   @CreateDateColumn({ type: 'timestamp' })
   createTime: Date;
 
   @UpdateDateColumn({ type: 'timestamp' })
   updatedTime: Date;
+  
+  @OneToMany(() => Like, like => like.interview)
+  likes: Like[];
+  
+  @OneToMany(() => Favorite, favorite => favorite.interview)
+  favorites: Favorite[];
 } 

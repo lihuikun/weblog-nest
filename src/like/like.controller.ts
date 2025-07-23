@@ -1,34 +1,28 @@
 import {
   Controller,
-  Get,
   Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
   UseGuards,
   Req,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { LikeService } from './like.service';
-import { CreateLikeDto } from './dto/create-like.dto';
-import { UpdateLikeDto } from './dto/update-like.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('点赞')
 @Controller('like')
 export class LikeController {
   constructor(private readonly likeService: LikeService) {}
 
-  @Post()
+  @Post('interview/:id')
   @UseGuards(AuthGuard)
-  create(
-    @Req()
-    req: {
-      user: { userId: number };
-    },
-    @Body() createLikeDto: CreateLikeDto,
+  @ApiOperation({ summary: '面试题点赞' })
+  toggleInterviewLike(
+    @Req() req: { user: { userId: number } },
+    @Param('id', ParseIntPipe) interviewId: number,
   ) {
     const userId = req.user.userId;
-    console.log('🚀 ~ LikeController ~ userId:', userId);
-    return this.likeService.toggleLike(userId, createLikeDto.articleId);
+    return this.likeService.toggleInterviewLike(userId, interviewId);
   }
 }
