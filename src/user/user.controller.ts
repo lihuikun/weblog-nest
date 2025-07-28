@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Put, Get, Delete, Query } from '@nestjs/common';
+import { Controller, Post, Body, Param, Put, Get, Delete, Query, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ApiBody, ApiOperation, ApiParam, ApiTags, ApiQuery } from '@nestjs/swagger';
@@ -8,6 +8,8 @@ import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
 import { CreateGithubLoginDto } from './dto/github-login.dto';
 import { Pagination, PaginationParams } from '../common/decorators/pagination.decorator';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { CurrentUserId } from 'src/common/decorators/require-role.decorator';
 
 @ApiTags('用户管理')
 @Controller('user')
@@ -80,5 +82,12 @@ export class UserController {
   @ApiBody({ type: CreateGithubLoginDto })
   async githubLogin(@Body() createGithubLoginDto: CreateGithubLoginDto): Promise<User> {
     return this.authService.githubLogin(createGithubLoginDto);
+  }
+
+  @Get('profile')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '获取当前登录用户个人信息' })
+  async getProfile(@CurrentUserId() userId: number) {
+    return this.authService.getUserById(userId);
   }
 }
