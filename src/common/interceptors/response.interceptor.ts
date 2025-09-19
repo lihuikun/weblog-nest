@@ -35,13 +35,13 @@ export class ResponseInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       map((data) => {
-        // sse不要加密，直接返回数据
-        const isSSE = context.switchToHttp().getRequest().headers.accept.includes('text/event-stream');
-        // 如果没有设置 CRYPTO_KEY，则直接返回数据
-        const encryptedData = process.env.CRYPTO_KEY && !isSSE
-          ? this.encryptData(data)
-          : data;
-        return { code: 200, msg: 'success', data: encryptedData };
+        // // sse不要加密，直接返回数据
+        // const isSSE = context.switchToHttp().getRequest().headers.accept.includes('text/event-stream');
+        // // 如果没有设置 CRYPTO_KEY，则直接返回数据
+        // const encryptedData = process.env.CRYPTO_KEY && !isSSE
+        //   ? this.encryptData(data)
+        //   : data;
+        return { code: 200, msg: 'success', data: this.encryptData(data) };
       }),
     );
   }
