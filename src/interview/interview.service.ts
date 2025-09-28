@@ -93,9 +93,46 @@ export class InterviewService {
     await this.interviewRepository.increment({ id }, 'viewCount', 1);
     interview.viewCount += 1;
 
+    // 获取相邻题目ID
+    const adjacentIds = await this.getAdjacentInterviewIds(id);
+
     // 处理答案显示逻辑和点赞收藏状态
     const [processedInterview] = await this.processInterviewAnswers([interview], userId);
-    return processedInterview;
+    
+    // 追加相邻题目ID信息
+    return {
+      ...processedInterview,
+      previousId: adjacentIds.previous,
+      nextId: adjacentIds.next,
+    };
+  }
+
+  private async getAdjacentInterviewIds(id: number): Promise<{
+    previous: number | null;
+    next: number | null;
+  }> {
+    // 获取上一题ID（ID小于当前题目的最大ID）
+    const previousInterview = await this.interviewRepository
+      .createQueryBuilder('interview')
+      .select(['interview.id'])
+      .where('interview.id < :id', { id })
+      .orderBy('interview.id', 'DESC')
+      .limit(1)
+      .getOne();
+
+    // 获取下一题ID（ID大于当前题目的最小ID）
+    const nextInterview = await this.interviewRepository
+      .createQueryBuilder('interview')
+      .select(['interview.id'])
+      .where('interview.id > :id', { id })
+      .orderBy('interview.id', 'ASC')
+      .limit(1)
+      .getOne();
+
+    return {
+      previous: previousInterview?.id || null,
+      next: nextInterview?.id || null,
+    };
   }
 
   // 处理面试题答案显示逻辑和用户交互信息
