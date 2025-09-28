@@ -41,7 +41,7 @@ export class ResponseInterceptor implements NestInterceptor {
         const encryptedData = process.env.CRYPTO_KEY && !isSSE
           ? this.encryptData(data)
           : data;
-        return { code: 200, msg: 'success', data: this.encryptData(data) };
+        return { code: 200, msg: 'success', data: encryptedData };
       }),
     );
   }

@@ -15,6 +15,7 @@ import {
 import { InterviewService } from './interview.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
+import { SearchInterviewDto } from './dto/search-interview.dto';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RequireRole } from 'src/common/decorators/require-role.decorator';
@@ -82,6 +83,33 @@ export class InterviewController {
     }
     
     return this.interviewService.findAll(page, pageSize, categoryId, difficulty, premiumFilter, userId);
+  }
+
+  @Post('search')
+  @ApiOperation({ summary: '搜索面试题' })
+  @ApiBearerAuth()
+  async search(
+    @Body() searchDto: SearchInterviewDto,
+    @Pagination() { page, pageSize }: PaginationParams,
+    @Headers('authorization') authorization?: string,
+  ) {
+    // 尝试从 authorization header 获取用户ID
+    let userId: number | undefined = undefined;
+    if (authorization) {
+      try {
+        const token = authorization.split(' ')[1];
+        const decoded = this.jwtService.verify(token, {
+          secret: process.env.JWT_SECRET
+        });
+        userId = decoded.userId;
+        console.log('从token获取到userId', userId);
+      } catch (error) {
+        console.log('解析token失败', error.message);
+        // 解析失败不影响正常使用，只是无法获取会员专属内容
+      }
+    }
+    
+    return this.interviewService.search(searchDto, page, pageSize, userId);
   }
 
   @Get(':id')

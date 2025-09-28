@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Interview } from './entities/interview.entity';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
+import { SearchInterviewDto } from './dto/search-interview.dto';
 import { User, Role } from 'src/user/entities/user.entity';
 import { LikeService } from 'src/like/like.service';
 import { FavoriteService } from 'src/favorite/favorite.service';
@@ -197,5 +198,66 @@ export class InterviewService {
     if (result.affected === 0) {
       throw new NotFoundException(`面试题 #${id} 不存在`);
     }
+  }
+
+  async search(
+    searchDto: SearchInterviewDto,
+    page: number = 1,
+    pageSize: number = 10,
+    userId?: number,
+  ): Promise<{
+    list: any[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const { keyword, categoryId, difficulty, requirePremium } = searchDto;
+    
+    const queryBuilder = this.interviewRepository.createQueryBuilder('interview');
+
+    // 关键词搜索 - 支持标题和内容模糊搜索
+    if (keyword) {
+      queryBuilder.andWhere(
+        '(interview.title LIKE :keyword OR interview.question LIKE :keyword OR interview.answer LIKE :keyword)',
+        { keyword: `%${keyword}%` }
+      );
+    }
+
+    // 分类筛选
+    if (categoryId) {
+      queryBuilder.andWhere('interview.categoryId = :categoryId', { categoryId });
+    }
+
+    // 难度筛选
+    if (difficulty) {
+      queryBuilder.andWhere('interview.difficulty = :difficulty', { difficulty });
+    }
+
+    // 会员筛选
+    if (requirePremium !== undefined) {
+      queryBuilder.andWhere('interview.requirePremium = :requirePremium', { 
+        requirePremium: requirePremium ? 1 : 0 
+      });
+    }
+
+    // 排序 - 按创建时间倒序
+    queryBuilder.orderBy('interview.createTime', 'DESC');
+
+    // 分页
+    const total = await queryBuilder.getCount();
+    const items = await queryBuilder
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getMany();
+
+    // 处理答案显示逻辑和点赞收藏状态
+    const processedItems = await this.processInterviewAnswers(items, userId);
+
+    return {
+      list: processedItems,
+      total,
+      page,
+      pageSize,
+    };
   }
 } 
