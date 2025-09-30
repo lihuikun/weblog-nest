@@ -136,9 +136,35 @@ export class UserService {
     return hash === hashedPassword;
   }
 
+  async checkUserRegistration(code: string): Promise<{
+    isRegistered: boolean;
+    user?: User;
+    message: string;
+  }> {
+   const {data} = await axios.get(
+      `https://api.weixin.qq.com/sns/jscode2session?appid=${process.env.WECHAT_APP_ID}&secret=${process.env.WECHAT_APP_SECRET}&js_code=${code}&grant_type=authorization_code`,
+    );
+    const { openid } = data;
+    const user = await this.userRepository.findOne({ where: { openId: openid } });
+    if(user) {
+      return {
+        isRegistered: true,
+        user,
+        message: '用户已注册'
+      }
+    } else {
+      return {
+        isRegistered: false,
+        message: '用户未注册，需要完善信息'
+      }
+    }
+  }
+
   async wechatLogin(
     code: string,
     platform: 'mini' | 'official',
+    nickname?: string,
+    avatarUrl?: string,
   ): Promise<User> {
     let response;
     // 根据不同平台调用不同的微信 API
@@ -167,11 +193,29 @@ export class UserService {
       // 如果用户不存在，创建新用户
       user = this.userRepository.create({
         openId: openid,
-        nickname: '', // 初始值为空，后续可通过其他接口更新
-        avatarUrl: '',
+        nickname: nickname || '', // 使用前端传递的昵称，如果没有则为空
+        avatarUrl: avatarUrl || '', // 使用前端传递的头像，如果没有则为空
         loginType: platform === 'mini' ? LoginType.WECHAT_MINI : LoginType.WECHAT_OFFICIAL,
       });
       await this.userRepository.save(user);
+    } else {
+      // 如果用户已存在，更新昵称和头像（如果前端有传递）
+      let needUpdate = false;
+      
+      if (nickname && user.nickname !== nickname) {
+        user.nickname = nickname;
+        needUpdate = true;
+      }
+      
+      if (avatarUrl && user.avatarUrl !== avatarUrl) {
+        user.avatarUrl = avatarUrl;
+        needUpdate = true;
+      }
+      
+      if (needUpdate) {
+        await this.userRepository.save(user);
+        this.logger.log(`更新用户信息: ${JSON.stringify({ nickname, avatarUrl })}`);
+      }
     }
 
     // 生成 JWT 令牌

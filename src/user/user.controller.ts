@@ -46,11 +46,30 @@ export class UserController {
     return this.authService.updateUserPartial(id, userDto);
   }
 
+  @Post('check-user')
+  @ApiOperation({ summary: '检查用户注册状态' })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', description: '微信登录凭证' }
+      },
+      required: ['code']
+    }
+  })
+  async checkUser(@Body() body: { code: string }): Promise<{
+    isRegistered: boolean;
+    user?: User;
+    message: string;
+  }> {
+    return this.authService.checkUserRegistration(body.code);
+  }
+
   @Post('mini-login')
   @ApiOperation({ summary: '微信登录' })
   @ApiBody({ type: CreateWechatLoginDto })
   async miniLogin(@Body() dto: CreateWechatLoginDto): Promise<User> {
-    return this.authService.wechatLogin(dto.code, 'mini');
+    return this.authService.wechatLogin(dto.code, 'mini', dto.nickname, dto.avatarUrl);
   }
 
   @Post('official-login')

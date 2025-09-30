@@ -15,7 +15,6 @@ import {
 import { InterviewService } from './interview.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
-import { SearchInterviewDto } from './dto/search-interview.dto';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RequireRole } from 'src/common/decorators/require-role.decorator';
@@ -85,11 +84,12 @@ export class InterviewController {
     return this.interviewService.findAll(page, pageSize, categoryId, difficulty, premiumFilter, userId);
   }
 
-  @Post('search')
+  @Get('search')
   @ApiOperation({ summary: '搜索面试题' })
+  @ApiQuery({ name: 'keyword', description: '搜索关键词', example: 'JavaScript闭包' })
   @ApiBearerAuth()
   async search(
-    @Body() searchDto: SearchInterviewDto,
+    @Query('keyword') keyword: string,
     @Pagination() { page, pageSize }: PaginationParams,
     @Headers('authorization') authorization?: string,
   ) {
@@ -109,7 +109,7 @@ export class InterviewController {
       }
     }
     
-    return this.interviewService.search(searchDto, page, pageSize, userId);
+    return this.interviewService.search(keyword, page, pageSize, userId);
   }
 
   @Get(':id')
