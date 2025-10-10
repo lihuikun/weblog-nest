@@ -40,7 +40,7 @@ export class UserService {
     try {
       const token = this.jwtService.sign(payload, {
         secret: process.env.JWT_SECRET,
-        expiresIn: '24h'
+        expiresIn: '30d' // 30天，约一个月
       });
       this.logger.log(`生成token成功: ${JSON.stringify(payload)}`);
       return token;
