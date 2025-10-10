@@ -141,12 +141,19 @@ export class UserService {
     user?: User;
     message: string;
   }> {
-   const {data} = await axios.get(
+    const {data} = await axios.get(
       `https://api.weixin.qq.com/sns/jscode2session?appid=${process.env.WECHAT_APP_ID}&secret=${process.env.WECHAT_APP_SECRET}&js_code=${code}&grant_type=authorization_code`,
     );
     const { openid } = data;
     const user = await this.userRepository.findOne({ where: { openId: openid } });
     if(user) {
+      // 刷新token
+      const payload = { userId: user.id, openId: user.openId };
+      user.token = this.generateToken(payload);
+      
+      // 保存新的token到数据库
+      await this.userRepository.save(user);
+      
       return {
         isRegistered: true,
         user,
