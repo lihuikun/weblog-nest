@@ -26,6 +26,7 @@ import { SparkModule } from './spark/spark.module';
 import { WechatModule } from './wechat/wechat.module';
 import { InterviewModule } from './interview/interview.module';
 import { VerificationModule } from './verification/verification.module';
+import { ResumeTemplateModule } from './resume-template/resume-template.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { VerificationModule } from './verification/verification.module';
     WechatModule,
     InterviewModule,
     VerificationModule,
+    ResumeTemplateModule,
   ],
   controllers: [AppController],
   providers: [
