@@ -21,4 +21,9 @@ export class CreateResumeTemplateDto {
   @IsOptional()
   @IsBoolean({ message: '是否为会员模板必须是布尔值' })
   isPremium?: boolean;
+
+  @ApiProperty({ description: '模板主题颜色', example: '#3B82F6', required: false })
+  @IsOptional()
+  @IsString({ message: '模板主题颜色必须是字符串' })
+  color?: string;
 }

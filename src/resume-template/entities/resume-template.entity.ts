@@ -23,6 +23,9 @@ export class ResumeTemplate {
   @Column({ type: 'boolean', default: false })
   isPremium: boolean;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  color?: string;
+
   @CreateDateColumn({ type: 'timestamp' })
   createTime?: Date;
 
