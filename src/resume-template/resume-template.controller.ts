@@ -23,6 +23,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { RequireRole } from '../common/decorators/require-role.decorator';
 import { RequirePremium } from '../common/decorators/require-premium.decorator';
 import { CurrentUserId } from '../common/decorators/require-role.decorator';
+import { OptionalUserId } from '../common/decorators/optional-user-id.decorator';
 import { Role } from '../user/entities/user.entity';
 
 @ApiTags('简历模板管理')
@@ -46,8 +47,9 @@ export class ResumeTemplateController {
   @Get()
   @ApiOperation({ summary: '获取简历模板列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async findAll() {
-    return await this.resumeTemplateService.findAll();
+  @ApiBearerAuth()
+  async findAll(@OptionalUserId() userId?: number) {
+    return await this.resumeTemplateService.findAll(userId);
   }
 
   @Get(':id')

@@ -27,11 +27,31 @@ export class ResumeTemplateService {
   /**
    * 获取简历模板列表（倒序）
    */
-  async findAll(): Promise<ResumeTemplate[]> {
-
+  async findAll(userId?: number): Promise<ResumeTemplate[]> {
     const templates = await this.resumeTemplateRepository.find({
       order: { createTime: 'DESC' },
     });
+
+    // 如果没有传入userId，直接去掉下载地址
+    if (!userId) {
+      templates.forEach(template => {
+        template.downloadUrl = undefined;
+      });
+      return templates;
+    }
+
+    // 查询用户角色
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['role']
+    });
+
+    // 如果不是admin或subAdmin，去掉下载地址
+    if (!user || (user.role !== 'admin' && user.role !== 'subAdmin')) {
+      templates.forEach(template => {
+        template.downloadUrl = undefined;
+      });
+    }
 
     return templates;
   }

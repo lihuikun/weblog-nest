@@ -10,7 +10,6 @@ import {
   Query,
   Req,
   ForbiddenException,
-  Headers,
 } from '@nestjs/common';
 import { InterviewService } from './interview.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
@@ -23,7 +22,7 @@ import { Pagination, PaginationParams } from 'src/common/decorators/pagination.d
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { checkIsPremium } from 'src/common/decorators/require-premium.decorator';
-import { JwtService } from '@nestjs/jwt';
+import { OptionalUserId } from 'src/common/decorators/optional-user-id.decorator';
 
 @ApiTags('面试题')
 @Controller('interviews')
@@ -32,7 +31,6 @@ export class InterviewController {
     private readonly interviewService: InterviewService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly jwtService: JwtService,
   ) {}
 
   @Post()
@@ -55,7 +53,7 @@ export class InterviewController {
     @Query('categoryId') categoryId?: number,
     @Query('difficulty') difficulty?: number,
     @Query('requirePremium') requirePremium?: string,
-    @Headers('authorization') authorization?: string,
+    @OptionalUserId() userId?: number,
   ) {
     // 处理字符串转布尔值
     let premiumFilter: boolean | undefined = undefined;
@@ -63,22 +61,6 @@ export class InterviewController {
       premiumFilter = true;
     } else if (requirePremium === 'false' || requirePremium === '0') {
       premiumFilter = false;
-    }
-    
-    // 尝试从 authorization header 获取用户ID
-    let userId: number | undefined = undefined;
-    if (authorization) {
-      try {
-        const token = authorization.split(' ')[1];
-        const decoded = this.jwtService.verify(token, {
-          secret: process.env.JWT_SECRET
-        });
-        userId = decoded.userId;
-        console.log('从token获取到userId', userId);
-      } catch (error) {
-        console.log('解析token失败', error.message);
-        // 解析失败不影响正常使用，只是无法获取会员专属内容
-      }
     }
     
     return this.interviewService.findAll(page, pageSize, categoryId, difficulty, premiumFilter, userId);
@@ -91,24 +73,8 @@ export class InterviewController {
   async search(
     @Query('keyword') keyword: string,
     @Pagination() { page, pageSize }: PaginationParams,
-    @Headers('authorization') authorization?: string,
+    @OptionalUserId() userId?: number,
   ) {
-    // 尝试从 authorization header 获取用户ID
-    let userId: number | undefined = undefined;
-    if (authorization) {
-      try {
-        const token = authorization.split(' ')[1];
-        const decoded = this.jwtService.verify(token, {
-          secret: process.env.JWT_SECRET
-        });
-        userId = decoded.userId;
-        console.log('从token获取到userId', userId);
-      } catch (error) {
-        console.log('解析token失败', error.message);
-        // 解析失败不影响正常使用，只是无法获取会员专属内容
-      }
-    }
-    
     return this.interviewService.search(keyword, page, pageSize, userId);
   }
 
@@ -118,24 +84,8 @@ export class InterviewController {
   @ApiBearerAuth()
   async findOne(
     @Param('id') id: string,
-    @Headers('authorization') authorization?: string,
+    @OptionalUserId() userId?: number,
   ) {
-    // 尝试从 authorization header 获取用户ID
-    let userId: number | undefined = undefined;
-    if (authorization) {
-      try {
-        const token = authorization.split(' ')[1];
-        const decoded = this.jwtService.verify(token, {
-          secret: process.env.JWT_SECRET
-        });
-        userId = decoded.userId;
-        console.log('从token获取到userId', userId);
-      } catch (error) {
-        console.log('解析token失败', error.message);
-        // 解析失败不影响正常使用，只是无法获取会员专属内容
-      }
-    }
-    
     return this.interviewService.findOne(+id, userId);
   }
 
