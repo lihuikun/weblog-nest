@@ -8,6 +8,7 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,6 +16,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ResumeTemplateService } from './resume-template.service';
 import { CreateResumeTemplateDto } from './dto/create-resume-template.dto';
@@ -45,11 +47,15 @@ export class ResumeTemplateController {
   }
 
   @Get()
-  @ApiOperation({ summary: '获取简历模板列表' })
+  @ApiOperation({ summary: '获取模板列表' })
+  @ApiQuery({ name: 'type', required: false, description: '模板类型', example: 0, enum: [0, 1] })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiBearerAuth()
-  async findAll(@OptionalUserId() userId?: number) {
-    return await this.resumeTemplateService.findAll(userId);
+  async findAll(
+    @OptionalUserId() userId?: number,
+    @Query('type') type?: number,
+  ) {
+    return await this.resumeTemplateService.findAll(userId, type);
   }
 
   @Get(':id')

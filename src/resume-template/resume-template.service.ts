@@ -27,8 +27,16 @@ export class ResumeTemplateService {
   /**
    * 获取简历模板列表（倒序）
    */
-  async findAll(userId?: number): Promise<ResumeTemplate[]> {
+  async findAll(userId?: number, type?: number): Promise<ResumeTemplate[]> {
+    const whereCondition: any = {};
+    
+    // 如果指定了类型，则按类型筛选
+    if (type !== undefined) {
+      whereCondition.type = type;
+    }
+
     const templates = await this.resumeTemplateRepository.find({
+      where: whereCondition,
       order: { createTime: 'DESC' },
     });
 

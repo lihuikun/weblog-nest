@@ -26,6 +26,9 @@ export class ResumeTemplate {
   @Column({ type: 'varchar', length: 50, nullable: true })
   color?: string;
 
+  @Column({ type: 'int', default: 0 })
+  type: number;
+
   @CreateDateColumn({ type: 'timestamp' })
   createTime?: Date;
 

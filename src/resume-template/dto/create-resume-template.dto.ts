@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsUrl, IsNumber } from 'class-validator';
 
 export class CreateResumeTemplateDto {
   @ApiProperty({ description: '简历模板名称', example: '经典商务简历模板' })
@@ -26,4 +26,9 @@ export class CreateResumeTemplateDto {
   @IsOptional()
   @IsString({ message: '模板主题颜色必须是字符串' })
   color?: string;
+
+  @ApiProperty({ description: '模板类型', example: 0, default: 0, enum: [0, 1] })
+  @IsOptional()
+  @IsNumber({}, { message: '模板类型必须是数字' })
+  type?: number;
 }
