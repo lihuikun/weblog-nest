@@ -27,6 +27,7 @@ import { WechatModule } from './wechat/wechat.module';
 import { InterviewModule } from './interview/interview.module';
 import { VerificationModule } from './verification/verification.module';
 import { ResumeTemplateModule } from './resume-template/resume-template.module';
+import { GuestbookModule } from './guestbook/guestbook.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { ResumeTemplateModule } from './resume-template/resume-template.module';
     InterviewModule,
     VerificationModule,
     ResumeTemplateModule,
+    GuestbookModule,
   ],
   controllers: [AppController],
   providers: [
