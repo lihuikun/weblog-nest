@@ -50,7 +50,7 @@ export class GuestbookController {
   @Get()
   @ApiOperation({ summary: '获取留言列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async findAll() {
+  async findAll(): Promise<{ list: any[]; total: number }> {
     return await this.guestbookService.findAll();
   }
 

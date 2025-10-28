@@ -25,12 +25,13 @@ export class GuestbookService {
   /**
    * 获取留言列表
    */
-  async findAll(): Promise<Guestbook[]> {
-    const guestbooks = await this.guestbookRepository.find({
+  async findAll(): Promise<{ list: Guestbook[]; total: number }> {
+    const [list, total] = await this.guestbookRepository.findAndCount({
       where: { isDeleted: false },
       order: { createTime: 'DESC' },
     });
-    return guestbooks;
+
+    return { list, total };
   }
 
   /**
