@@ -134,18 +134,22 @@ export class InterviewService {
     const currentCreateTime = currentInterview.createTime;
 
     // 构建查询条件（基于创建时间，与列表排序一致：createTime DESC）
+    // 上一题：创建时间更新的，或相同时间但ID更大的（明确排除当前题目）
     const previousQueryBuilder = this.interviewRepository
       .createQueryBuilder('interview')
       .select(['interview.id'])
-      .where(
+      .where('interview.id != :id', { id })
+      .andWhere(
         '(interview.createTime > :currentCreateTime OR (interview.createTime = :currentCreateTime AND interview.id > :id))',
         { currentCreateTime, id }
       );
 
+    // 下一题：创建时间更旧的，或相同时间但ID更小的（明确排除当前题目）
     const nextQueryBuilder = this.interviewRepository
       .createQueryBuilder('interview')
       .select(['interview.id'])
-      .where(
+      .where('interview.id != :id', { id })
+      .andWhere(
         '(interview.createTime < :currentCreateTime OR (interview.createTime = :currentCreateTime AND interview.id < :id))',
         { currentCreateTime, id }
       );
