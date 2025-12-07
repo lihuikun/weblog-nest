@@ -68,25 +68,51 @@ export class InterviewController {
 
   @Get('search')
   @ApiOperation({ summary: '搜索面试题' })
-  @ApiQuery({ name: 'keyword', description: '搜索关键词', example: 'JavaScript闭包' })
+  @ApiQuery({ name: 'keyword', required: false, description: '搜索关键词', example: 'JavaScript闭包' })
+  @ApiQuery({ name: 'difficulty', required: false, description: '难度等级' })
+  @ApiQuery({ name: 'requirePremium', required: false, description: '是否需要会员权限', type: Boolean })
   @ApiBearerAuth()
   async search(
-    @Query('keyword') keyword: string,
     @Pagination() { page, pageSize }: PaginationParams,
+    @Query('keyword') keyword?: string,
+    @Query('difficulty') difficulty?: number,
+    @Query('requirePremium') requirePremium?: string,
     @OptionalUserId() userId?: number,
   ) {
-    return this.interviewService.search(keyword, page, pageSize, userId);
+    // 处理字符串转布尔值
+    let premiumFilter: boolean | undefined = undefined;
+    if (requirePremium === 'true' || requirePremium === '1') {
+      premiumFilter = true;
+    } else if (requirePremium === 'false' || requirePremium === '0') {
+      premiumFilter = false;
+    }
+    
+    return this.interviewService.search(keyword, difficulty, premiumFilter, page, pageSize, userId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '获取面试题详情' })
   @ApiParam({ name: 'id', description: '面试题ID' })
+  @ApiQuery({ name: 'keyword', required: false, description: '搜索关键词（用于获取相邻题目）' })
+  @ApiQuery({ name: 'difficulty', required: false, description: '难度等级（用于获取相邻题目）' })
+  @ApiQuery({ name: 'requirePremium', required: false, description: '是否需要会员权限（用于获取相邻题目）', type: Boolean })
   @ApiBearerAuth()
   async findOne(
     @Param('id') id: string,
+    @Query('keyword') keyword?: string,
+    @Query('difficulty') difficulty?: number,
+    @Query('requirePremium') requirePremium?: string,
     @OptionalUserId() userId?: number,
   ) {
-    return this.interviewService.findOne(+id, userId);
+    // 处理字符串转布尔值
+    let premiumFilter: boolean | undefined = undefined;
+    if (requirePremium === 'true' || requirePremium === '1') {
+      premiumFilter = true;
+    } else if (requirePremium === 'false' || requirePremium === '0') {
+      premiumFilter = false;
+    }
+    
+    return this.interviewService.findOne(+id, userId, keyword, difficulty, premiumFilter);
   }
 
   @Patch(':id')
