@@ -28,6 +28,7 @@ import { InterviewModule } from './interview/interview.module';
 import { VerificationModule } from './verification/verification.module';
 import { ResumeTemplateModule } from './resume-template/resume-template.module';
 import { GuestbookModule } from './guestbook/guestbook.module';
+import { BackupModule } from './backup/backup.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { GuestbookModule } from './guestbook/guestbook.module';
     VerificationModule,
     ResumeTemplateModule,
     GuestbookModule,
+    BackupModule,
   ],
   controllers: [AppController],
   providers: [
