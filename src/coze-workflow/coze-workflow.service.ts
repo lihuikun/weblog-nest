@@ -5,6 +5,7 @@ import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import * as cron from 'node-cron';
 import * as nodemailer from 'nodemailer';
+import * as path from 'path';
 import { CozeWorkflow } from './entities/coze-workflow.entity';
 
 @Injectable()
@@ -175,22 +176,173 @@ export class CozeWorkflowService {
       // 格式化邮件内容（只显示 title + 链接）
       const articlesHtml = this.formatArticlesForEmail(workflowData);
 
+      // 获取logo路径
+      const logoPath = path.join(__dirname, '..', '..', 'src', 'assets', 'logo.jpg');
+
       await this.transporter.sendMail({
         from: `"前端的日常" <${sender}>`,
         to: recipientEmail,
-        subject: `前端技术文章推荐 - ${dateLabel}`,
+        subject: `📚 前端技术文章推荐 - ${dateLabel}`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
-            <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">前端技术文章推荐</h2>
-            <p style="color: #666; margin-bottom: 20px;">日期：${dateLabel}</p>
-            <div style="margin-top: 20px;">
-              ${articlesHtml}
-            </div>
-            <p style="margin-top: 30px; color: #666; font-size: 12px; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
-              此邮件由系统自动发送，请勿回复。
-            </p>
-          </div>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              @media only screen and (max-width: 600px) {
+                .email-container {
+                  width: 100% !important;
+                  padding: 20px 0 !important;
+                }
+                .email-content {
+                  width: 100% !important;
+                  border-radius: 0 !important;
+                }
+                .header-section {
+                  padding: 25px 20px !important;
+                }
+                .logo-img {
+                  max-width: 50px !important;
+                  margin-bottom: 10px !important;
+                }
+                .header-title {
+                  font-size: 22px !important;
+                  letter-spacing: 1px !important;
+                }
+                .header-subtitle {
+                  font-size: 13px !important;
+                }
+                .date-section {
+                  padding: 20px 15px 15px 15px !important;
+                }
+                .date-text {
+                  font-size: 14px !important;
+                }
+                .content-section {
+                  padding: 20px 15px !important;
+                }
+                .article-card {
+                  padding: 15px !important;
+                  margin-bottom: 15px !important;
+                }
+                .article-number {
+                  min-width: 26px !important;
+                  height: 26px !important;
+                  font-size: 12px !important;
+                  margin-right: 12px !important;
+                }
+                .article-title {
+                  font-size: 15px !important;
+                  margin-bottom: 10px !important;
+                }
+                .article-link {
+                  font-size: 12px !important;
+                  padding: 6px 10px !important;
+                  display: block !important;
+                  word-break: break-all !important;
+                }
+                .prompt-section {
+                  padding: 20px 15px !important;
+                }
+                .prompt-box {
+                  padding: 20px 15px !important;
+                }
+                .prompt-title {
+                  font-size: 18px !important;
+                }
+                .prompt-text {
+                  font-size: 14px !important;
+                }
+                .footer-section {
+                  padding: 20px 15px !important;
+                }
+                .footer-text {
+                  font-size: 11px !important;
+                }
+              }
+            </style>
+          </head>
+          <body style="margin: 0; padding: 0; background-color: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f7fa; padding: 40px 0;" class="email-container">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); overflow: hidden; max-width: 100%;" class="email-content">
+                    <!-- 头部品牌区域 -->
+                    <tr>
+                      <td style="background: linear-gradient(135deg, #1890ff 0%, #0050b3 100%); padding: 40px 30px; text-align: center;" class="header-section">
+                        <img src="cid:logo" alt="前端的日常" style="max-width: 50px; height: auto; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); display: block; margin-left: auto; margin-right: auto;" class="logo-img" />
+                        <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);" class="header-title">
+                          前端的日常
+                        </h1>
+                        <p style="margin: 8px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 14px; font-weight: 300;" class="header-subtitle">
+                          每日精选前端技术文章
+                        </p>
+                      </td>
+                    </tr>
+                    
+                    <!-- 日期信息 -->
+                    <tr>
+                      <td style="padding: 25px 30px 20px 30px; border-bottom: 2px solid #f0f0f0;" class="date-section">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                          <span style="color: #1890ff; font-size: 15px; font-weight: 600;" class="date-text">
+                            📅 ${dateLabel}
+                          </span>
+                          <span style="color: #999; font-size: 13px;">
+                            共 ${workflowData?.articles?.length || 0} 篇文章
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    <!-- 文章列表 -->
+                    <tr>
+                      <td style="padding: 30px;" class="content-section">
+                        ${articlesHtml}
+                      </td>
+                    </tr>
+                    
+                    <!-- 微信小程序提示区域 -->
+                    <tr>
+                      <td style="padding: 30px; background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%); border-top: 3px solid #1890ff;" class="prompt-section">
+                        <div style="text-align: center; padding: 25px; background-color: #ffffff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);" class="prompt-box">
+                          <div style="font-size: 24px; margin-bottom: 15px;">💡</div>
+                          <h3 style="margin: 0 0 10px 0; color: #333; font-size: 20px; font-weight: 600;" class="prompt-title">
+                            想要提升前端技能？
+                          </h3>
+                          <p style="margin: 0; color: #666; font-size: 15px; line-height: 1.6;" class="prompt-text">
+                            欢迎前往 <strong style="color: #1890ff;">微信小程序「前端的日常」</strong> 进行刷题练习
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    <!-- 底部信息 -->
+                    <tr>
+                      <td style="padding: 25px 30px; background-color: #fafafa; text-align: center; border-top: 1px solid #eee;" class="footer-section">
+                        <p style="margin: 0; color: #999; font-size: 12px; line-height: 1.6;" class="footer-text">
+                          此邮件由「前端的日常」系统自动发送<br/>
+                          每日 08:00 准时推送，助您掌握最新前端技术动态
+                        </p>
+                        <p style="margin: 15px 0 0 0; color: #ccc; font-size: 11px;">
+                          © 前端的日常 | 专注前端技术分享
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
         `,
+        attachments: [
+          {
+            filename: 'logo.jpg',
+            path: logoPath,
+            cid: 'logo', // 在HTML中通过 cid:logo 引用
+          },
+        ],
       });
 
       this.logger.log(`通知邮件已发送至 ${recipientEmail}`);
@@ -204,7 +356,11 @@ export class CozeWorkflowService {
    */
   private formatArticlesForEmail(workflowData: any): string {
     if (!workflowData?.articles || !Array.isArray(workflowData.articles)) {
-      return '<p>暂无文章数据</p>';
+      return `
+        <div style="text-align: center; padding: 40px; color: #999;">
+          <p style="margin: 0; font-size: 15px;">暂无文章数据</p>
+        </div>
+      `;
     }
 
     const articlesHtml = workflowData.articles
@@ -212,13 +368,20 @@ export class CozeWorkflowService {
         const title = article.title || '无标题';
         const url = article.url || '#';
         return `
-          <div style="margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #4CAF50; border-radius: 4px;">
-            <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">
-              ${index + 1}. ${title}
-            </h3>
-            <a href="${url}" target="_blank" style="color: #4CAF50; text-decoration: none; font-size: 14px; word-break: break-all;">
-              ${url}
-            </a>
+          <div style="margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border-left: 4px solid #1890ff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); transition: all 0.3s ease;" class="article-card">
+            <div style="display: flex; align-items: flex-start;">
+              <div style="min-width: 30px; height: 30px; background: linear-gradient(135deg, #1890ff 0%, #0050b3 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 14px; margin-right: 15px; flex-shrink: 0;" class="article-number">
+                ${index + 1}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <h3 style="margin: 0 0 12px 0; color: #333; font-size: 17px; font-weight: 600; line-height: 1.4; word-wrap: break-word;" class="article-title">
+                  ${title}
+                </h3>
+                <a href="${url}" target="_blank" style="display: inline-block; color: #1890ff; text-decoration: none; font-size: 14px; word-break: break-all; padding: 8px 12px; background-color: #e6f7ff; border-radius: 6px; transition: all 0.3s ease;" class="article-link">
+                  🔗 ${url}
+                </a>
+              </div>
+            </div>
           </div>
         `;
       })
