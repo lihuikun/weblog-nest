@@ -48,6 +48,10 @@ export class User {
   @Column({ type: 'boolean', default: false })
   isPremium: boolean;
 
+  // 是否接收每日文章邮件推送
+  @Column({ type: 'boolean', default: false })
+  receiveArticleEmail: boolean;
+
   @CreateDateColumn({ type: 'timestamp' })
   createTime?: Date;
 

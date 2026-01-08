@@ -7,6 +7,7 @@ import * as cron from 'node-cron';
 import * as nodemailer from 'nodemailer';
 import * as path from 'path';
 import { CozeWorkflow } from './entities/coze-workflow.entity';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class CozeWorkflowService {
@@ -16,6 +17,8 @@ export class CozeWorkflowService {
   constructor(
     @InjectRepository(CozeWorkflow)
     private readonly cozeWorkflowRepository: Repository<CozeWorkflow>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly configService: ConfigService,
   ) {
     // 初始化邮件发送器
@@ -179,9 +182,24 @@ export class CozeWorkflowService {
       // 获取logo路径
       const logoPath = path.join(__dirname, '..', '..', 'src', 'assets', 'logo.jpg');
 
+      // 获取所有开启邮件推送的用户
+      const users = await this.userRepository.find({
+        where: { receiveArticleEmail: true },
+      });
+
+      // 收集所有订阅的邮箱（使用 BCC 密送，不暴露其他用户邮箱）
+      const bccList: string[] = [];
+      users.forEach((user) => {
+        // 直接使用用户的 email 字段
+        if (user.email && user.email !== recipientEmail) {
+          bccList.push(user.email);
+        }
+      });
+
       await this.transporter.sendMail({
         from: `"前端的日常" <${sender}>`,
-        to: recipientEmail,
+        to: recipientEmail, // 默认收件人
+        bcc: bccList.length > 0 ? bccList.join(',') : undefined, // 密送所有订阅用户
         subject: `📚 前端技术文章推荐 - ${dateLabel}`,
         html: `
           <!DOCTYPE html>
@@ -415,6 +433,80 @@ export class CozeWorkflowService {
       recipientEmail: workflow.recipientEmail,
       createTime: workflow.createTime,
       updatedTime: workflow.updatedTime,
+    };
+  }
+
+  /**
+   * 订阅邮箱
+   * 更新用户的 email 字段（不自动开启推送开关）
+   */
+  async subscribeEmail(userId: number, email: string): Promise<any> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    // 更新用户的邮箱（不自动开启推送开关）
+    user.email = email;
+    user.updatedTime = new Date();
+
+    await this.userRepository.save(user);
+
+    this.logger.log(`用户 ${userId} 更新邮箱：${email}`);
+
+    return {
+      success: true,
+      message: '邮箱更新成功，请手动开启推送开关',
+      email,
+      receiveArticleEmail: user.receiveArticleEmail,
+    };
+  }
+
+  /**
+   * 更新邮件推送开关
+   */
+  async updateEmailPushStatus(userId: number, receiveArticleEmail: boolean): Promise<any> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    user.receiveArticleEmail = receiveArticleEmail;
+    user.updatedTime = new Date();
+
+    await this.userRepository.save(user);
+
+    this.logger.log(`用户 ${userId} ${receiveArticleEmail ? '开启' : '关闭'}邮件推送`);
+
+    return {
+      success: true,
+      message: receiveArticleEmail ? '已开启邮件推送' : '已关闭邮件推送',
+      receiveArticleEmail,
+    };
+  }
+
+  /**
+   * 获取用户的订阅信息
+   */
+  async getUserSubscription(userId: number): Promise<any> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      userId: user.id,
+      email: user.email,
+      receiveArticleEmail: user.receiveArticleEmail,
     };
   }
 }
