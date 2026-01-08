@@ -28,7 +28,7 @@ export class CozeWorkflowController {
   }
 
   @Get()
-  @ApiOperation({ summary: '获取最新的工作流数据' })
+  @ApiOperation({ summary: '获取数据库的工作流数据' })
   async getLatestData() {
     const data = await this.cozeWorkflowService.getLatestWorkflowData();
     if (!data) {

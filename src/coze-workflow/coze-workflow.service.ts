@@ -393,15 +393,28 @@ export class CozeWorkflowService {
   /**
    * 获取最新的工作流数据
    */
-  async getLatestWorkflowData(): Promise<CozeWorkflow | null> {
-    const workflow = await this.cozeWorkflowRepository.findOne({
+  async getLatestWorkflowData(): Promise<any> {
+    const workflows = await this.cozeWorkflowRepository.find({
       order: { createTime: 'DESC' },
+      take: 1,
     });
 
-    if (!workflow) {
+    if (!workflows || workflows.length === 0) {
       return null;
     }
 
-    return workflow;
+    const workflow = workflows[0];
+
+    // 返回 JSON 格式的数据
+    return {
+      id: workflow.id,
+      data: workflow.data,
+      query: workflow.query,
+      count: workflow.count,
+      timeRange: workflow.timeRange,
+      recipientEmail: workflow.recipientEmail,
+      createTime: workflow.createTime,
+      updatedTime: workflow.updatedTime,
+    };
   }
 }
