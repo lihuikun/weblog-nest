@@ -33,10 +33,10 @@ export class CozeWorkflowService {
     });
 
     /**
-     * 每天早上8点执行一次
+     * 每天早上9点执行一次
      */
     cron.schedule(
-      '0 8 * * *',
+      '0 9 * * *',
       async () => {
         await this.executeWorkflow();
       },
@@ -45,7 +45,7 @@ export class CozeWorkflowService {
         timezone: 'Asia/Shanghai',
       },
     );
-    this.logger.log('Coze 工作流定时任务已开启：每天 08:00 (Asia/Shanghai)');
+    this.logger.log('Coze 工作流定时任务已开启：每天 09:00 (Asia/Shanghai)');
   }
 
   /**
