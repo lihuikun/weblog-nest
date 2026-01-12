@@ -59,17 +59,10 @@ export class CozeWorkflowService {
       }
 
       const query =
-        this.configService.get<string>('COZE_QUERY') ||
         '前端架构 React Vue TypeScript 工程化';
-      const count = parseInt(
-        this.configService.get<string>('COZE_COUNT') || '10',
-        10,
-      );
-      const timeRange =
-        this.configService.get<string>('COZE_TIME_RANGE') || 'OneWeek';
-      const recipientEmail =
-        this.configService.get<string>('COZE_RECIPIENT_EMAIL') ||
-        'lihk180542@gmail.com';
+      const count = parseInt('10',10);
+      const timeRange = 'OneWeek';
+      const recipientEmail = 'lihk180542@gmail.com';
 
       const response = await axios.post(
         'https://6d6cwzyrkt.coze.site/run',
