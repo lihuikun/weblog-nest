@@ -30,6 +30,7 @@ import { ResumeTemplateModule } from './resume-template/resume-template.module';
 import { GuestbookModule } from './guestbook/guestbook.module';
 import { BackupModule } from './backup/backup.module';
 import { CozeWorkflowModule } from './coze-workflow/coze-workflow.module';
+import { StatsModule } from './stats/stats.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { CozeWorkflowModule } from './coze-workflow/coze-workflow.module';
     GuestbookModule,
     BackupModule,
     CozeWorkflowModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [
