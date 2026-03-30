@@ -33,10 +33,10 @@ export class CozeWorkflowService {
     });
 
     /**
-     * 每天早上9点执行一次
+     * 每天早上8点执行一次：抓取 AI 开发者日报并覆盖存储
      */
     cron.schedule(
-      '0 9 * * *',
+      '0 8 * * *',
       async () => {
         await this.executeWorkflow();
       },
@@ -45,7 +45,7 @@ export class CozeWorkflowService {
         timezone: 'Asia/Shanghai',
       },
     );
-    this.logger.log('Coze 工作流定时任务已开启：每天 09:00 (Asia/Shanghai)');
+    this.logger.log('Coze 工作流定时任务已开启：每天 08:00 (Asia/Shanghai) - 抓取 AI 开发者日报');
   }
 
   /**
@@ -53,53 +53,106 @@ export class CozeWorkflowService {
    */
   async executeWorkflow(): Promise<void> {
     try {
-      const apiToken = this.configService.get<string>('COZE_API_TOKEN');
-      if (!apiToken) {
-        throw new Error('未配置 COZE_API_TOKEN');
-      }
+      const recipientEmail =
+        this.configService.get<string>('COZE_RECIPIENT_EMAIL') ||
+        'lihk180542@gmail.com';
 
-      const query =
-        '前端架构 React Vue TypeScript 工程化';
-      const count = parseInt('10',10);
-      const timeRange = 'OneWeek';
-      const recipientEmail = 'lihk180542@gmail.com';
+      const dateLabel = new Date().toLocaleDateString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+      });
+      const dateStr = this.getShanghaiDateString();
+      const url = `https://ainews.liduos.com/post/${dateStr}`;
 
-      const response = await axios.post(
-        'https://6d6cwzyrkt.coze.site/run',
-        {
-          query,
-          count: count.toString(),
-          time_range: timeRange,
-          recipient_email: recipientEmail,
+      const response = await axios.get(url, {
+        timeout: 30000,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
         },
-        {
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      });
 
-      // 格式化文章数据（只保留 title + url）
-      const formattedData = this.formatArticlesData(response.data);
+      const plainText = this.extractPlainText(response.data);
+      const formattedData = `${dateLabel}\n\n${plainText}`;
 
-      // 保存数据到数据库（覆盖旧数据）
+      // 保存数据到数据库（覆盖旧数据：只保留一条）
       await this.saveWorkflowData({
         data: formattedData,
-        query,
-        count,
-        timeRange,
+        query: 'AI 开发者日报',
+        count: 1,
+        timeRange: dateStr,
         recipientEmail,
       });
 
-      // 发送邮件通知
-      await this.sendNotificationEmail(recipientEmail, response.data);
+      // 发送邮件通知（把抓取到的正文作为纯文本内容放进邮件）
+      await this.sendNotificationEmail(recipientEmail, {
+        contentText: formattedData,
+      });
 
       this.logger.log('Coze 工作流执行成功');
     } catch (error) {
       this.logger.error(`Coze 工作流执行失败: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  /**
+   * 获取 Asia/Shanghai 下的 YYYY-MM-DD
+   */
+  private getShanghaiDateString(date: Date = new Date()): string {
+    const parts = new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+
+    const get = (type: string) => parts.find((p) => p.type === type)?.value;
+
+    const year = get('year') || '';
+    const month = get('month') || '';
+    const day = get('day') || '';
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * 尽量把页面内容转成纯文本，用于存库/邮件展示
+   */
+  private extractPlainText(data: unknown): string {
+    const raw =
+      typeof data === 'string' ? data : JSON.stringify(data, null, 0);
+    if (!raw) return '';
+
+    // 如果看起来是 HTML，就做简单标签剥离；否则直接当纯文本
+    const looksLikeHtml =
+      /<\/?(html|head|body|article|div|p|span|br|h1|h2|h3|li|ul|ol)[\s>]/i.test(
+        raw,
+      ) || raw.includes('<!DOCTYPE');
+
+    if (!looksLikeHtml) return raw.trim();
+
+    const withoutScripts = raw
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '');
+
+    const withLineBreaks = withoutScripts
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n\n')
+      .replace(/<\/h1>/gi, '\n\n')
+      .replace(/<\/h2>/gi, '\n\n')
+      .replace(/<\/h3>/gi, '\n\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<li>/gi, '- ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>');
+
+    const text = withLineBreaks.replace(/<[^>]+>/g, '');
+
+    return text.replace(/\n{3,}/g, '\n\n').trim();
   }
 
   /**
@@ -169,8 +222,11 @@ export class CozeWorkflowService {
         timeZone: 'Asia/Shanghai',
       });
 
-      // 格式化邮件内容（只显示 title + 链接）
-      const articlesHtml = this.formatArticlesForEmail(workflowData);
+      // 格式化邮件内容：优先展示抓取的纯文本
+      const contentText = workflowData?.contentText as string | undefined;
+      const articlesHtml = contentText
+        ? this.formatContentForEmail(contentText)
+        : this.formatArticlesForEmail(workflowData);
 
       // 获取logo路径
       const logoPath = path.join(__dirname, '..', '..', 'src', 'assets', 'logo.jpg');
@@ -300,7 +356,7 @@ export class CozeWorkflowService {
                             📅 ${dateLabel}
                           </span>
                           <span style="color: #999; font-size: 13px;">
-                            共 ${workflowData?.articles?.length || 0} 篇文章
+                            ${contentText ? '今日内容更新' : `共 ${workflowData?.articles?.length || 0} 篇文章`}
                           </span>
                         </div>
                       </td>
@@ -399,6 +455,43 @@ export class CozeWorkflowService {
       .join('');
 
     return articlesHtml;
+  }
+
+  /**
+   * 把纯文本内容嵌入邮件（转义 HTML，避免正文里的 <...> 被当成标签）
+   */
+  private formatContentForEmail(contentText: string): string {
+    const maxChars = 12000;
+    const shown =
+      contentText.length > maxChars
+        ? `${contentText.slice(0, maxChars)}\n\n...(已截断，请以网页/接口展示为准)`
+        : contentText;
+
+    const escaped = this.escapeHtml(shown);
+    return `
+      <pre style="
+        margin: 0;
+        padding: 16px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: #333;
+      ">${escaped}</pre>
+    `;
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
