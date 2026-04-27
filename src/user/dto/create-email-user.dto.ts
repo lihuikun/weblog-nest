@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength, Length } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, Length, IsOptional } from 'class-validator';
 
 export class CreateEmailUserDto {
     @ApiProperty({ description: '用户邮箱' })
@@ -13,11 +13,11 @@ export class CreateEmailUserDto {
     @MinLength(6, { message: '密码长度不能少于6个字符' })
     password: string;
 
-    @ApiProperty({ description: '验证码' })
-    @IsNotEmpty({ message: '验证码不能为空' })
+    @ApiProperty({ description: '验证码', required: false })
+    @IsOptional()
     @IsString({ message: '验证码必须是字符串' })
     @Length(6, 6, { message: '验证码必须是6位' })
-    code: string;
+    code?: string;
 
     @ApiProperty({ description: '用户昵称', required: false })
     @IsString()
@@ -26,4 +26,9 @@ export class CreateEmailUserDto {
     @ApiProperty({ description: '用户头像 URL', required: false })
     @IsString()
     avatarUrl?: string;
+
+    @ApiProperty({ description: '团队邀请短链code', required: false })
+    @IsOptional()
+    @IsString()
+    inviteCode?: string;
 }

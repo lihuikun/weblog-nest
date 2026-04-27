@@ -12,17 +12,23 @@ export class CategoryService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
-    const category = this.categoryRepository.create(createCategoryDto);
+  async create(teamId: number, createCategoryDto: CreateCategoryDto): Promise<Category> {
+    const category = this.categoryRepository.create({
+      ...createCategoryDto,
+      teamId,
+    });
     return await this.categoryRepository.save(category);
   }
 
-  async findAll(): Promise<Category[]> {
-    return await this.categoryRepository.find();
+  async findAll(teamId: number): Promise<Category[]> {
+    return await this.categoryRepository.find({
+      where: { teamId },
+      order: { id: 'DESC' },
+    });
   }
 
-  async findOne(id: number): Promise<Category> {
-    const category = await this.categoryRepository.findOne({ where: { id } });
+  async findOne(teamId: number, id: number): Promise<Category> {
+    const category = await this.categoryRepository.findOne({ where: { id, teamId } });
     if (!category) {
       throw new Error(`Category with ID ${id} not found`);
     }
@@ -30,12 +36,13 @@ export class CategoryService {
   }
 
   async update(
+    teamId: number,
     id: number,
     updateCategoryDto: UpdateCategoryDto,
   ): Promise<Category> {
-    await this.categoryRepository.update(id, updateCategoryDto);
+    await this.categoryRepository.update({ id, teamId }, updateCategoryDto);
     const updatedCategory = await this.categoryRepository.findOne({
-      where: { id },
+      where: { id, teamId },
     });
     if (!updatedCategory) {
       throw new Error(`Category with ID ${id} not found`);
@@ -43,8 +50,8 @@ export class CategoryService {
     return updatedCategory;
   }
 
-  async delete(id: number): Promise<void> {
-    const result = await this.categoryRepository.delete(id);
+  async delete(teamId: number, id: number): Promise<void> {
+    const result = await this.categoryRepository.delete({ id, teamId });
     if (result.affected === 0) {
       throw new Error(`Category with ID ${id} not found`);
     }

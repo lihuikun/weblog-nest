@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class EmailLoginDto {
     @ApiProperty({ description: '用户邮箱' })
@@ -11,4 +11,9 @@ export class EmailLoginDto {
     @IsString({ message: '密码必须是字符串' })
     @IsNotEmpty({ message: '密码不能为空' })
     password: string;
+
+    @ApiProperty({ description: '团队邀请短链code', required: false })
+    @IsOptional()
+    @IsString()
+    inviteCode?: string;
 }

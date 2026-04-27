@@ -69,7 +69,7 @@ export class UserController {
   @ApiOperation({ summary: '微信登录' })
   @ApiBody({ type: CreateWechatLoginDto })
   async miniLogin(@Body() dto: CreateWechatLoginDto): Promise<User> {
-    return this.authService.wechatLogin(dto.code, 'mini', dto.nickname, dto.avatarUrl);
+    return this.authService.wechatLogin(dto.code, 'mini', dto.nickname, dto.avatarUrl, dto.inviteCode);
   }
 
   @Post('official-login')
@@ -92,7 +92,7 @@ export class UserController {
   @ApiOperation({ summary: '邮箱登录' })
   @ApiBody({ type: EmailLoginDto })
   async emailLogin(@Body() emailLoginDto: EmailLoginDto): Promise<User> {
-    return this.authService.emailLogin(emailLoginDto.email, emailLoginDto.password);
+    return this.authService.emailLogin(emailLoginDto.email, emailLoginDto.password, emailLoginDto.inviteCode);
   }
 
   //github 登录

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 export enum LoginType {
   EMAIL = 'email',
@@ -39,6 +39,15 @@ export class User {
   // token
   @Column({ type: 'varchar', nullable: true })
   token?: string;
+
+  // 团队ID：默认注册时等于自己的用户ID，接受邀请后会切换为目标团队ID
+  @Index()
+  @Column({ type: 'int', nullable: true })
+  teamId?: number;
+
+  // 团队状态是否锁定：加入他人团队后锁定，不能再次邀请或加入其他团队
+  @Column({ type: 'boolean', default: false })
+  isTeamLocked: boolean;
 
   // 角色,默认用户
   @Column({ type: 'enum', enum: Role, default: Role.USER, nullable: false })

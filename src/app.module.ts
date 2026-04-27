@@ -31,6 +31,7 @@ import { GuestbookModule } from './guestbook/guestbook.module';
 import { BackupModule } from './backup/backup.module';
 import { CozeWorkflowModule } from './coze-workflow/coze-workflow.module';
 import { StatsModule } from './stats/stats.module';
+import { TeamModule } from './team/team.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { StatsModule } from './stats/stats.module';
     BackupModule,
     CozeWorkflowModule,
     StatsModule,
+    TeamModule,
   ],
   controllers: [AppController],
   providers: [

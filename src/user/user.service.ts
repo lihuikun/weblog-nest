@@ -12,6 +12,7 @@ import * as crypto from 'crypto';
 import { CreateGithubLoginDto } from './dto/github-login.dto';
 import { VerificationService } from '../verification/verification.service';
 import { VerificationType } from '../verification/entities/verification.entity';
+import { TeamService } from '../team/team.service';
 
 @Injectable()
 export class UserService {
@@ -22,6 +23,7 @@ export class UserService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly verificationService: VerificationService,
+    private readonly teamService: TeamService,
   ) { }
   private readonly githubAppConfigs = {
     default: {
@@ -34,6 +36,21 @@ export class UserService {
       client_id: process.env.GITHUB_JS_DAILY_CLIENT_ID,
       client_secret: process.env.GITHUB_JS_DAILY_CLIENT_SECRET,
     },
+  }
+
+  /**
+   * 确保用户有默认 teamId。
+   */
+  private async ensureTeamMembership(userId: number): Promise<void> {
+    await this.teamService.ensureUserTeam(userId);
+  }
+
+  /**
+   * 登录/注册成功后，如果带了邀请码则自动加入目标团队。
+   */
+  private async autoJoinTeamByInviteCode(userId: number, inviteCode?: string): Promise<void> {
+    if (!inviteCode) return;
+    await this.teamService.joinTeamByInviteCode(userId, inviteCode);
   }
   // 统一生成JWT的方法
   private generateToken(payload: any): string {
@@ -51,7 +68,7 @@ export class UserService {
   }
 
   async emailRegister(createEmailUserDto: CreateEmailUserDto): Promise<User> {
-    const { email, password, code, nickname, avatarUrl } = createEmailUserDto;
+    const { email, password, code, nickname, avatarUrl, inviteCode } = createEmailUserDto;
     
     // 检查邮箱是否已存在
     const existingUser = await this.userRepository.findOne({
@@ -68,19 +85,21 @@ export class UserService {
       throw new ConflictException('邮箱格式不正确');
     }
     
-    // 验证验证码
-    try {
-      const isVerified = await this.verificationService.verifyCode({
-        email,
-        code,
-        type: VerificationType.EMAIL_REGISTRATION,
-      });
-      
-      if (!isVerified) {
-        throw new BadRequestException('验证码无效');
+    // 验证码可选：仅在传入验证码时校验
+    if (code) {
+      try {
+        const isVerified = await this.verificationService.verifyCode({
+          email,
+          code,
+          type: VerificationType.EMAIL_REGISTRATION,
+        });
+        
+        if (!isVerified) {
+          throw new BadRequestException('验证码无效');
+        }
+      } catch (error) {
+        throw new BadRequestException(error.message || '验证码验证失败');
       }
-    } catch (error) {
-      throw new BadRequestException(error.message || '验证码验证失败');
     }
     
     // 创建新用户
@@ -99,11 +118,13 @@ export class UserService {
     // 生成 JWT 令牌，仅使用userId和email
     const payload = { userId: user.id, email: user.email };
     user.token = this.generateToken(payload);
+    await this.ensureTeamMembership(user.id);
+    await this.autoJoinTeamByInviteCode(user.id, inviteCode);
 
     return user;
   }
 
-  async emailLogin(email: string, password: string): Promise<User> {
+  async emailLogin(email: string, password: string, inviteCode?: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { email, loginType: LoginType.EMAIL },
     });
@@ -120,6 +141,8 @@ export class UserService {
     // 生成 JWT 令牌，仅使用userId和email
     const payload = { userId: user.id, email: user.email };
     user.token = this.generateToken(payload);
+    await this.ensureTeamMembership(user.id);
+    await this.autoJoinTeamByInviteCode(user.id, inviteCode);
 
     return user;
   }
@@ -153,6 +176,7 @@ export class UserService {
       
       // 保存新的token到数据库
       await this.userRepository.save(user);
+      await this.ensureTeamMembership(user.id);
       
       return {
         isRegistered: true,
@@ -172,6 +196,7 @@ export class UserService {
     platform: 'mini' | 'official',
     nickname?: string,
     avatarUrl?: string,
+    inviteCode?: string,
   ): Promise<User> {
     let response;
     // 根据不同平台调用不同的微信 API
@@ -205,6 +230,7 @@ export class UserService {
         loginType: platform === 'mini' ? LoginType.WECHAT_MINI : LoginType.WECHAT_OFFICIAL,
       });
       await this.userRepository.save(user);
+      await this.ensureTeamMembership(user.id);
     } else {
       // 如果用户已存在，更新昵称和头像（如果前端有传递）
       let needUpdate = false;
@@ -231,12 +257,14 @@ export class UserService {
 
     // 保存token到用户记录
     await this.userRepository.save(user);
+    await this.ensureTeamMembership(user.id);
+    await this.autoJoinTeamByInviteCode(user.id, inviteCode);
 
     return user;
   }
 
   async githubLogin(createGithubLoginDto: CreateGithubLoginDto): Promise<User> {
-    const { code,type='default' } = createGithubLoginDto;
+    const { code,type='default', inviteCode } = createGithubLoginDto;
     console.log('type', type)
     const config = this.githubAppConfigs[type];
 
@@ -274,6 +302,8 @@ export class UserService {
 
       // 保存token到用户记录
       await this.userRepository.save(newUser);
+      await this.ensureTeamMembership(newUser.id);
+      await this.autoJoinTeamByInviteCode(newUser.id, inviteCode);
 
       return newUser;
     }
@@ -285,6 +315,8 @@ export class UserService {
     user.avatarUrl = avatar_url;
     // 保存token到用户记录
     await this.userRepository.save(user);
+    await this.ensureTeamMembership(user.id);
+    await this.autoJoinTeamByInviteCode(user.id, inviteCode);
 
     return user;
   }

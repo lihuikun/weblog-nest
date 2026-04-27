@@ -36,4 +36,12 @@ export class CreateWechatLoginDto {
   @IsOptional()
   @IsString()
   redirectUri?: string;
+
+  @ApiProperty({
+    description: '团队邀请短链code',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  inviteCode?: string;
 }
