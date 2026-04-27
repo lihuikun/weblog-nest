@@ -29,15 +29,21 @@ export class MenuService {
     return saved;
   }
 
-  async findAll(userId: number): Promise<Menu[]> {
+  async findAll(userId: number, keyword?: string): Promise<Menu[]> {
     const { teamId } = await this.teamService.getMyTeam(userId);
-    return this.menuRepository.find({
-      where: { teamId },
-      order: { id: 'DESC' },
-    });
+    const queryBuilder = this.menuRepository
+      .createQueryBuilder('menu')
+      .where('menu.teamId = :teamId', { teamId })
+      .orderBy('menu.id', 'DESC');
+
+    if (keyword) {
+      queryBuilder.andWhere('menu.title LIKE :keyword', { keyword: `%${keyword}%` });
+    }
+
+    return queryBuilder.getMany();
   }
 
-  async findSquareMenus(pagination: PaginationParams, userId?: number) {
+  async findSquareMenus(pagination: PaginationParams, userId?: number, keyword?: string) {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
 
@@ -47,6 +53,10 @@ export class MenuService {
       .orderBy('menu.id', 'DESC')
       .skip(skip)
       .take(pageSize);
+
+    if (keyword) {
+      queryBuilder.andWhere('menu.title LIKE :keyword', { keyword: `%${keyword}%` });
+    }
 
     const [list, total] = await queryBuilder.getManyAndCount();
     if (!list.length) {

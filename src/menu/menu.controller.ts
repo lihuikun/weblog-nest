@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserId } from '../common/decorators/require-role.decorator';
@@ -28,19 +28,25 @@ export class MenuController {
   @Get()
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: '获取团队菜单列表' })
-  async findAll(@CurrentUserId() userId: number) {
-    return this.menuService.findAll(userId);
+  @ApiQuery({ name: 'keyword', required: false, example: '红烧', description: '菜名关键词（模糊搜索）' })
+  async findAll(
+    @CurrentUserId() userId: number,
+    @Query('keyword') keyword?: string,
+  ) {
+    return this.menuService.findAll(userId, keyword);
   }
 
   @Get('square')
   @ApiOperation({ summary: '菜单广场分页列表' })
   @ApiQuery({ name: 'page', required: false, example: 1, description: '页码' })
   @ApiQuery({ name: 'pageSize', required: false, example: 10, description: '每页条数' })
+  @ApiQuery({ name: 'keyword', required: false, example: '鸡', description: '菜名关键词（模糊搜索）' })
   async findSquareMenus(
     @OptionalUserId() userId: number | undefined,
     @Pagination() pagination: PaginationParams,
+    @Query('keyword') keyword?: string,
   ) {
-    return this.menuService.findSquareMenus(pagination, userId);
+    return this.menuService.findSquareMenus(pagination, userId, keyword);
   }
 
   @Post('square/:id/add')
