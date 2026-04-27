@@ -43,6 +43,16 @@ export class MenuController {
     return this.menuService.findSquareMenus(pagination, userId);
   }
 
+  @Post('square/:id/add')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '将广场菜单添加到当前团队菜单' })
+  async addSquareMenuToTeam(
+    @CurrentUserId() userId: number,
+    @Param('id', ParseIntPipe) squareMenuId: number,
+  ) {
+    return this.menuService.addSquareMenuToTeam(userId, squareMenuId);
+  }
+
   @Get(':id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: '获取菜单详情' })

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { TeamService } from '../team/team.service';
@@ -90,6 +90,45 @@ export class MenuService {
     }
 
     return menu;
+  }
+
+  async addSquareMenuToTeam(userId: number, squareMenuId: number): Promise<Menu> {
+    const { teamId } = await this.teamService.getMyTeam(userId);
+
+    const squareMenu = await this.menuRepository.findOne({
+      where: { id: squareMenuId, shareToSquare: true },
+    });
+    if (!squareMenu) {
+      throw new NotFoundException('广场菜单不存在');
+    }
+
+    // 本团队菜单不需要重复添加
+    if (squareMenu.teamId === teamId) {
+      throw new BadRequestException('该菜单已在当前团队中');
+    }
+
+    const existing = await this.menuRepository.findOne({
+      where: { teamId, squareMenuId },
+    });
+    if (existing) {
+      throw new BadRequestException('该菜单已添加到当前团队');
+    }
+
+    const newMenu = this.menuRepository.create({
+      teamId,
+      title: squareMenu.title,
+      category: squareMenu.category,
+      shareToSquare: false,
+      squareMenuId: squareMenu.id,
+      description: squareMenu.description,
+      cover: squareMenu.cover,
+      price: squareMenu.price,
+      recommendation: squareMenu.recommendation,
+      duration: squareMenu.duration,
+      difficulty: squareMenu.difficulty,
+    });
+
+    return this.menuRepository.save(newMenu);
   }
 
   async update(userId: number, id: number, dto: UpdateMenuDto): Promise<Menu> {
