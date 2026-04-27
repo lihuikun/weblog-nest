@@ -4,6 +4,9 @@ import { Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
 import { TeamInvite, TeamInviteStatus } from './entities/team-invite.entity';
 import { User } from '../user/entities/user.entity';
+import { Category } from '../category/entities/category.entity';
+import { CreateCategoryDto } from '../category/dto/create-category.dto';
+import { UpdateCategoryDto } from '../category/dto/update-category.dto';
 
 @Injectable()
 export class TeamService implements OnModuleInit {
@@ -14,6 +17,8 @@ export class TeamService implements OnModuleInit {
     private readonly teamInviteRepository: Repository<TeamInvite>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
   ) { }
 
   /**
@@ -45,12 +50,81 @@ export class TeamService implements OnModuleInit {
    */
   async getMyTeam(userId: number) {
     const user = await this.ensureUserTeam(userId);
+    const categories = await this.getTeamCategories(userId);
     return {
       userId: user.id,
       teamId: user.teamId,
       teamName: user.teamName || `Team-${user.teamId}`,
       isTeamLocked: user.isTeamLocked,
+      categories,
     };
+  }
+
+  /**
+   * 获取团队菜单分类列表。
+   */
+  async getTeamCategories(userId: number): Promise<Category[]> {
+    const user = await this.ensureUserTeam(userId);
+    return this.categoryRepository.find({
+      where: { teamId: user.teamId },
+      order: { id: 'DESC' },
+    });
+  }
+
+  /**
+   * 获取团队菜单分类详情。
+   */
+  async getTeamCategoryById(userId: number, categoryId: number): Promise<Category> {
+    const user = await this.ensureUserTeam(userId);
+    const category = await this.categoryRepository.findOne({
+      where: { id: categoryId, teamId: user.teamId },
+    });
+    if (!category) {
+      throw new NotFoundException('分类不存在');
+    }
+    return category;
+  }
+
+  /**
+   * 创建团队菜单分类。
+   */
+  async createTeamCategory(userId: number, dto: CreateCategoryDto): Promise<Category> {
+    const user = await this.ensureUserTeam(userId);
+    const category = this.categoryRepository.create({
+      ...dto,
+      teamId: user.teamId!,
+    });
+    return this.categoryRepository.save(category);
+  }
+
+  /**
+   * 更新团队菜单分类。
+   */
+  async updateTeamCategory(userId: number, categoryId: number, dto: UpdateCategoryDto): Promise<Category> {
+    const user = await this.ensureUserTeam(userId);
+    await this.categoryRepository.update({ id: categoryId, teamId: user.teamId }, dto);
+    const updated = await this.categoryRepository.findOne({
+      where: { id: categoryId, teamId: user.teamId },
+    });
+    if (!updated) {
+      throw new NotFoundException('分类不存在');
+    }
+    return updated;
+  }
+
+  /**
+   * 删除团队菜单分类。
+   */
+  async deleteTeamCategory(userId: number, categoryId: number): Promise<{ success: boolean }> {
+    const user = await this.ensureUserTeam(userId);
+    const result = await this.categoryRepository.delete({
+      id: categoryId,
+      teamId: user.teamId,
+    });
+    if (result.affected === 0) {
+      throw new NotFoundException('分类不存在');
+    }
+    return { success: true };
   }
 
   /**
