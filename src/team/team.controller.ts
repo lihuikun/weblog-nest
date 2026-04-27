@@ -4,6 +4,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserId } from '../common/decorators/require-role.decorator';
 import { CreateTeamInviteDto } from './dto/create-team-invite.dto';
 import { UpdateTeamNameDto } from './dto/update-team-name.dto';
+import { JoinTeamDto } from './dto/join-team.dto';
 import { TeamService } from './team.service';
 import { CreateCategoryDto } from '../category/dto/create-category.dto';
 import { UpdateCategoryDto } from '../category/dto/update-category.dto';
@@ -29,6 +30,17 @@ export class TeamController {
     @Body() dto: CreateTeamInviteDto,
   ) {
     return this.teamService.createInvite(userId, dto.expireDays);
+  }
+
+  @Post('join')
+  @ApiOperation({ summary: '输入邀请码加入团队' })
+  @ApiBody({ type: JoinTeamDto })
+  async joinTeam(
+    @CurrentUserId() userId: number,
+    @Body() dto: JoinTeamDto,
+  ) {
+    await this.teamService.joinTeamByInviteCode(userId, dto.inviteCode);
+    return { success: true };
   }
 
   @Put('name')
