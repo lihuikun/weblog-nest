@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserId } from '../common/decorators/require-role.decorator';
 import { CreateTeamInviteDto } from './dto/create-team-invite.dto';
+import { UpdateTeamNameDto } from './dto/update-team-name.dto';
 import { TeamService } from './team.service';
 
 @ApiTags('团队管理')
@@ -26,5 +27,15 @@ export class TeamController {
     @Body() dto: CreateTeamInviteDto,
   ) {
     return this.teamService.createInvite(userId, dto.expireDays);
+  }
+
+  @Put('name')
+  @ApiOperation({ summary: '修改团队名称（团队成员均可）' })
+  @ApiBody({ type: UpdateTeamNameDto })
+  async updateTeamName(
+    @CurrentUserId() userId: number,
+    @Body() dto: UpdateTeamNameDto,
+  ) {
+    return this.teamService.updateTeamName(userId, dto.teamName);
   }
 }

@@ -45,6 +45,10 @@ export class User {
   @Column({ type: 'int', nullable: true })
   teamId?: number;
 
+  // 团队名称：同一 teamId 的用户共享同一个 teamName
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  teamName?: string;
+
   // 团队状态是否锁定：加入他人团队后锁定，不能再次邀请或加入其他团队
   @Column({ type: 'boolean', default: false })
   isTeamLocked: boolean;

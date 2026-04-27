@@ -33,6 +33,7 @@ export class TeamService implements OnModuleInit {
     }
     if (!user.teamId) {
       user.teamId = user.id;
+      user.teamName = user.teamName || `Team-${user.id}`;
       user.isTeamLocked = false;
       await this.userRepository.save(user);
     }
@@ -47,6 +48,7 @@ export class TeamService implements OnModuleInit {
     return {
       userId: user.id,
       teamId: user.teamId,
+      teamName: user.teamName || `Team-${user.teamId}`,
       isTeamLocked: user.isTeamLocked,
     };
   }
@@ -117,7 +119,10 @@ export class TeamService implements OnModuleInit {
       throw new BadRequestException('不能加入自己的团队');
     }
 
+    const inviter = await this.userRepository.findOne({ where: { id: invite.inviterUserId } });
+
     user.teamId = invite.targetTeamId;
+    user.teamName = inviter?.teamName || `Team-${invite.targetTeamId}`;
     user.isTeamLocked = true;
     await this.userRepository.save(user);
 
@@ -140,18 +145,45 @@ export class TeamService implements OnModuleInit {
    * 启动时补齐历史用户 teamId。
    */
   private async ensureTeamIdForAllUsers(): Promise<void> {
-    const users = await this.userRepository.find({ select: ['id', 'teamId', 'isTeamLocked'] });
+    const users = await this.userRepository.find({ select: ['id', 'teamId', 'teamName', 'isTeamLocked'] });
     for (const user of users) {
       try {
         if (!user.teamId) {
           user.teamId = user.id;
+          user.teamName = user.teamName || `Team-${user.id}`;
           user.isTeamLocked = false;
+          await this.userRepository.save(user);
+        } else if (!user.teamName) {
+          user.teamName = `Team-${user.teamId}`;
           await this.userRepository.save(user);
         }
       } catch (error) {
         this.logger.error(`补齐teamId失败 userId=${user.id}: ${error.message}`);
       }
     }
+  }
+
+  /**
+   * 修改团队名称（团队成员都可修改）。
+   */
+  async updateTeamName(userId: number, teamName: string): Promise<{ success: boolean; teamName: string }> {
+    const user = await this.ensureUserTeam(userId);
+    const normalizedTeamName = teamName.trim();
+    if (!normalizedTeamName) {
+      throw new BadRequestException('团队名称不能为空');
+    }
+
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({ teamName: normalizedTeamName })
+      .where('teamId = :teamId', { teamId: user.teamId })
+      .execute();
+
+    return {
+      success: true,
+      teamName: normalizedTeamName,
+    };
   }
 
   /**
