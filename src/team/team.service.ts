@@ -51,13 +51,36 @@ export class TeamService implements OnModuleInit {
   async getMyTeam(userId: number) {
     const user = await this.ensureUserTeam(userId);
     const categories = await this.getTeamCategories(userId);
+    const invitedUsers = await this.getInvitedUsers(userId);
     return {
       userId: user.id,
       teamId: user.teamId,
       teamName: user.teamName || `Team-${user.teamId}`,
       isTeamLocked: user.isTeamLocked,
       categories,
+      invitedUsers,
     };
+  }
+
+  /**
+   * 获取当前团队被邀请加入的用户信息（不包含自己）。
+   */
+  async getInvitedUsers(userId: number): Promise<Array<{ id: number; nickname?: string; avatarUrl?: string; email?: string }>> {
+    const user = await this.ensureUserTeam(userId);
+    const users = await this.userRepository.find({
+      where: { teamId: user.teamId },
+      select: ['id', 'nickname', 'avatarUrl', 'email'],
+      order: { id: 'ASC' },
+    });
+
+    return users
+      .filter(item => item.id !== userId)
+      .map(item => ({
+        id: item.id,
+        nickname: item.nickname,
+        avatarUrl: item.avatarUrl,
+        email: item.email,
+      }));
   }
 
   /**
