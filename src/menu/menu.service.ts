@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { TeamService } from '../team/team.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { Menu } from './entities/menu.entity';
+import { PaginationParams } from '../common/decorators/pagination.decorator';
 
 @Injectable()
 export class MenuService {
@@ -34,6 +35,47 @@ export class MenuService {
       where: { teamId },
       order: { id: 'DESC' },
     });
+  }
+
+  async findSquareMenus(pagination: PaginationParams, userId?: number) {
+    const { page, pageSize } = pagination;
+    const skip = (page - 1) * pageSize;
+
+    const queryBuilder = this.menuRepository
+      .createQueryBuilder('menu')
+      .where('menu.shareToSquare = :shareToSquare', { shareToSquare: true })
+      .orderBy('menu.id', 'DESC')
+      .skip(skip)
+      .take(pageSize);
+
+    const [list, total] = await queryBuilder.getManyAndCount();
+    if (!list.length) {
+      return { list: [], total, page, pageSize };
+    }
+
+    let addedIdSet = new Set<number>();
+    if (userId) {
+      const { teamId } = await this.teamService.getMyTeam(userId);
+      const squareIds = list.map(item => item.id);
+      const addedMenus = await this.menuRepository.find({
+        where: {
+          teamId,
+          squareMenuId: In(squareIds),
+        },
+        select: ['squareMenuId'],
+      });
+      addedIdSet = new Set(addedMenus.map(item => item.squareMenuId).filter(Boolean));
+    }
+
+    return {
+      total,
+      page,
+      pageSize,
+      list: list.map(item => ({
+        ...item,
+        addedToTeam: addedIdSet.has(item.id),
+      })),
+    };
   }
 
   async findOne(userId: number, id: number): Promise<Menu> {
