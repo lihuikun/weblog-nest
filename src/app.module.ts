@@ -32,6 +32,7 @@ import { BackupModule } from './backup/backup.module';
 import { CozeWorkflowModule } from './coze-workflow/coze-workflow.module';
 import { StatsModule } from './stats/stats.module';
 import { TeamModule } from './team/team.module';
+import { MenuModule } from './menu/menu.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { TeamModule } from './team/team.module';
     CozeWorkflowModule,
     StatsModule,
     TeamModule,
+    MenuModule,
   ],
   controllers: [AppController],
   providers: [
