@@ -29,11 +29,13 @@ export class MenuController {
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: '获取团队菜单列表' })
   @ApiQuery({ name: 'keyword', required: false, example: '红烧', description: '菜名关键词（模糊搜索）' })
+  @ApiQuery({ name: 'categoryId', required: false, example: 1, description: '分类ID（可选）' })
   async findAll(
     @CurrentUserId() userId: number,
     @Query('keyword') keyword?: string,
+    @Query('categoryId') categoryId?: number,
   ) {
-    return this.menuService.findAll(userId, keyword);
+    return this.menuService.findAll(userId, keyword, categoryId);
   }
 
   @Get('square')

@@ -29,7 +29,7 @@ export class MenuService {
     return saved;
   }
 
-  async findAll(userId: number, keyword?: string): Promise<Menu[]> {
+  async findAll(userId: number, keyword?: string, categoryId?: number): Promise<Menu[]> {
     const { teamId } = await this.teamService.getMyTeam(userId);
     const queryBuilder = this.menuRepository
       .createQueryBuilder('menu')
@@ -38,6 +38,10 @@ export class MenuService {
 
     if (keyword) {
       queryBuilder.andWhere('menu.title LIKE :keyword', { keyword: `%${keyword}%` });
+    }
+
+    if (categoryId !== undefined && categoryId !== null) {
+      queryBuilder.andWhere('menu.category = :categoryId', { categoryId: String(categoryId) });
     }
 
     return queryBuilder.getMany();
