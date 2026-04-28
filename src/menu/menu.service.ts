@@ -41,7 +41,7 @@ export class MenuService {
     }
 
     if (categoryId !== undefined && categoryId !== null) {
-      queryBuilder.andWhere('menu.category = :categoryId', { categoryId: categoryId });
+      queryBuilder.andWhere('menu.categoryId = :categoryId', { categoryId: categoryId });
     }
 
     return queryBuilder.getMany();
