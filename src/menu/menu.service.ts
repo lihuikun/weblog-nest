@@ -41,7 +41,7 @@ export class MenuService {
     }
 
     if (categoryId !== undefined && categoryId !== null) {
-      queryBuilder.andWhere('menu.category = :categoryId', { categoryId: String(categoryId) });
+      queryBuilder.andWhere('menu.category = :categoryId', { categoryId: categoryId });
     }
 
     return queryBuilder.getMany();
@@ -131,7 +131,7 @@ export class MenuService {
     const newMenu = this.menuRepository.create({
       teamId,
       title: squareMenu.title,
-      category: squareMenu.category,
+      categoryId: squareMenu.categoryId,
       shareToSquare: false,
       squareMenuId: squareMenu.id,
       description: squareMenu.description,

@@ -12,8 +12,8 @@ export class Menu {
   @Column({ type: 'varchar', length: 20 })
   title: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  category: string;
+  @Column({ type: 'int' })
+  categoryId: number;
 
   @Column({ type: 'boolean', default: false })
   shareToSquare: boolean;
