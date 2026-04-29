@@ -146,6 +146,8 @@ export class MenuService {
       shareToSquare: false,
       squareMenuId: squareMenu.id,
       description: squareMenu.description,
+      steps: squareMenu.steps,
+      ingredients: squareMenu.ingredients,
       cover: squareMenu.cover,
       price: squareMenu.price,
       recommendation: squareMenu.recommendation,

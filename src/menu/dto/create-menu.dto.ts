@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, Max } from 'class-validator';
+import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, Max } from 'class-validator';
 
 export class CreateMenuDto {
   @ApiProperty({ description: '菜单标题（最多20字符）', maxLength: 20 })
@@ -24,13 +24,24 @@ export class CreateMenuDto {
   description: string;
 
   @ApiProperty({
-    description: '菜单步骤富文本内容',
+    description: '菜单步骤列表',
     required: false,
-    example: '<p>第一步：准备食材</p><p>第二步：热锅下油</p>',
+    example: ['准备食材', '热锅下油', '翻炒出香味'],
   })
   @IsOptional()
-  @IsString()
-  steps?: string;
+  @IsArray()
+  @IsString({ each: true })
+  steps?: string[];
+
+  @ApiProperty({
+    description: '食材列表',
+    required: false,
+    example: ['排骨', '酱油', '盐'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  ingredients?: string[];
 
   @ApiProperty({ description: '封面图片地址' })
   @IsString()

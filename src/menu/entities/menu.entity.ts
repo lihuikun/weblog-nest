@@ -30,8 +30,11 @@ export class Menu {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'longtext', nullable: true })
-  steps?: string;
+  @Column({ type: 'json', nullable: true })
+  steps?: string[];
+
+  @Column({ type: 'json', nullable: true })
+  ingredients?: string[];
 
   @Column({ type: 'varchar', length: 255 })
   cover: string;
