@@ -9,6 +9,10 @@ export class Menu {
   @Column({ type: 'int' })
   teamId: number;
 
+  @Index()
+  @Column({ type: 'int', nullable: true })
+  userId?: number;
+
   @Column({ type: 'varchar', length: 20 })
   title: string;
 

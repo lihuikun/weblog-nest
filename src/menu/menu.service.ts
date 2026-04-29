@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { TeamService } from '../team/team.service';
+import { UserService } from '../user/user.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { Menu } from './entities/menu.entity';
@@ -13,11 +14,12 @@ export class MenuService {
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
     private readonly teamService: TeamService,
+    private readonly userService: UserService,
   ) { }
 
   async create(userId: number, dto: CreateMenuDto): Promise<Menu> {
     const { teamId } = await this.teamService.getMyTeam(userId);
-    const menu = this.menuRepository.create({ ...dto, teamId });
+    const menu = this.menuRepository.create({ ...dto, teamId, userId });
     const saved = await this.menuRepository.save(menu);
 
     // 新增时自动补记录菜单广场菜单ID（默认使用当前菜单ID）。
@@ -67,6 +69,10 @@ export class MenuService {
       return { list: [], total, page, pageSize };
     }
 
+    const usersInfo = await this.userService.getUsersBasicInfo(
+      [...new Set(list.map(item => item.userId).filter(id => id))],
+    );
+
     let addedIdSet = new Set<number>();
     if (userId) {
       const { teamId } = await this.teamService.getMyTeam(userId);
@@ -87,6 +93,11 @@ export class MenuService {
       pageSize,
       list: list.map(item => ({
         ...item,
+        user: item.userId ? (usersInfo[item.userId] || {
+          id: item.userId,
+          nickname: '未知用户',
+          avatarUrl: '',
+        }) : null,
         addedToTeam: addedIdSet.has(item.id),
       })),
     };
@@ -147,7 +158,7 @@ export class MenuService {
 
   async update(userId: number, id: number, dto: UpdateMenuDto): Promise<Menu> {
     const { teamId } = await this.teamService.getMyTeam(userId);
-    await this.menuRepository.update({ id, teamId }, dto);
+    await this.menuRepository.update({ id, teamId }, { ...dto, userId });
     const updated = await this.menuRepository.findOne({ where: { id, teamId } });
     if (!updated) throw new NotFoundException('菜单不存在');
     return updated;
