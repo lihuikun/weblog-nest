@@ -23,6 +23,15 @@ export class CreateMenuDto {
   @IsNotEmpty({ message: '描述不能为空' })
   description: string;
 
+  @ApiProperty({
+    description: '菜单步骤富文本内容',
+    required: false,
+    example: '<p>第一步：准备食材</p><p>第二步：热锅下油</p>',
+  })
+  @IsOptional()
+  @IsString()
+  steps?: string;
+
   @ApiProperty({ description: '封面图片地址' })
   @IsString()
   @IsNotEmpty({ message: '封面不能为空' })
