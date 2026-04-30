@@ -5,6 +5,7 @@ import { randomBytes } from 'crypto';
 import { TeamInvite, TeamInviteStatus } from './entities/team-invite.entity';
 import { User } from '../user/entities/user.entity';
 import { Category } from '../category/entities/category.entity';
+import { Order } from '../order/entities/order.entity';
 import { CreateCategoryDto } from '../category/dto/create-category.dto';
 import { UpdateCategoryDto } from '../category/dto/update-category.dto';
 
@@ -19,6 +20,8 @@ export class TeamService implements OnModuleInit {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
   ) { }
 
   /**
@@ -52,11 +55,15 @@ export class TeamService implements OnModuleInit {
     const user = await this.ensureUserTeam(userId);
     const categories = await this.getTeamCategories(userId);
     const invitedUsers = await this.getInvitedUsers(userId);
+    const orderCount = await this.orderRepository.count({
+      where: { teamId: user.teamId },
+    });
     return {
       userId: user.id,
       teamId: user.teamId,
       teamName: user.teamName || `Team-${user.teamId}`,
       isTeamLocked: user.isTeamLocked,
+      orderCount,
       categories,
       invitedUsers,
     };

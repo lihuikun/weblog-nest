@@ -34,6 +34,7 @@ import { StatsModule } from './stats/stats.module';
 import { TeamModule } from './team/team.module';
 import { MenuModule } from './menu/menu.module';
 import { CartModule } from './cart/cart.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { CartModule } from './cart/cart.module';
     TeamModule,
     MenuModule,
     CartModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [
