@@ -5,7 +5,7 @@ import { randomBytes } from 'crypto';
 import { TeamInvite, TeamInviteStatus } from './entities/team-invite.entity';
 import { User } from '../user/entities/user.entity';
 import { Category } from '../category/entities/category.entity';
-import { Order } from '../order/entities/order.entity';
+import { Order, OrderStatus } from '../order/entities/order.entity';
 import { CreateCategoryDto } from '../category/dto/create-category.dto';
 import { UpdateCategoryDto } from '../category/dto/update-category.dto';
 
@@ -53,10 +53,14 @@ export class TeamService implements OnModuleInit {
    */
   async getMyTeam(userId: number) {
     const user = await this.ensureUserTeam(userId);
+    await this.autoCompleteTimeoutOrders(user.teamId!);
     const categories = await this.getTeamCategories(userId);
     const invitedUsers = await this.getInvitedUsers(userId);
     const orderCount = await this.orderRepository.count({
       where: { teamId: user.teamId },
+    });
+    const completedOrderCount = await this.orderRepository.count({
+      where: { teamId: user.teamId, status: OrderStatus.COMPLETED },
     });
     return {
       userId: user.id,
@@ -64,6 +68,7 @@ export class TeamService implements OnModuleInit {
       teamName: user.teamName || `Team-${user.teamId}`,
       isTeamLocked: user.isTeamLocked,
       orderCount,
+      completedOrderCount,
       categories,
       invitedUsers,
     };
@@ -300,5 +305,16 @@ export class TeamService implements OnModuleInit {
       if (!exists) return code;
     }
     throw new BadRequestException('生成邀请码失败，请稍后重试');
+  }
+
+  private async autoCompleteTimeoutOrders(teamId: number): Promise<void> {
+    await this.orderRepository
+      .createQueryBuilder()
+      .update(Order)
+      .set({ status: OrderStatus.COMPLETED })
+      .where('teamId = :teamId', { teamId })
+      .andWhere('status = :status', { status: OrderStatus.MAKING })
+      .andWhere('createTime <= DATE_SUB(NOW(), INTERVAL 1 DAY)')
+      .execute();
   }
 }

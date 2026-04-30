@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { In, Repository } from 'typeorm';
 import { PaginationParams } from '../common/decorators/pagination.decorator';
 import { Menu } from '../menu/entities/menu.entity';
@@ -11,6 +12,8 @@ import { OrderItem } from './entities/order-item.entity';
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
@@ -69,6 +72,7 @@ export class OrderService {
 
   async teamHistory(userId: number, pagination: PaginationParams, status?: OrderStatus) {
     const { teamId } = await this.teamService.getMyTeam(userId);
+    await this.autoCompleteTimeoutOrdersByTeam(teamId);
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
 
@@ -160,5 +164,30 @@ export class OrderService {
     const timePart = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
     const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
     return `OD${datePart}${timePart}${userId}${randomPart}`;
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async autoCompleteTimeoutOrdersHourly(): Promise<void> {
+    const result = await this.orderRepository
+      .createQueryBuilder()
+      .update(Order)
+      .set({ status: OrderStatus.COMPLETED })
+      .where('status = :status', { status: OrderStatus.MAKING })
+      .andWhere('createTime <= DATE_SUB(NOW(), INTERVAL 1 DAY)')
+      .execute();
+    if ((result.affected || 0) > 0) {
+      this.logger.log(`定时自动完成订单数量: ${result.affected}`);
+    }
+  }
+
+  private async autoCompleteTimeoutOrdersByTeam(teamId: number): Promise<void> {
+    await this.orderRepository
+      .createQueryBuilder()
+      .update(Order)
+      .set({ status: OrderStatus.COMPLETED })
+      .where('teamId = :teamId', { teamId })
+      .andWhere('status = :status', { status: OrderStatus.MAKING })
+      .andWhere('createTime <= DATE_SUB(NOW(), INTERVAL 1 DAY)')
+      .execute();
   }
 }
