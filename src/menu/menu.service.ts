@@ -49,6 +49,22 @@ export class MenuService {
     return queryBuilder.getMany();
   }
 
+  async randomFiveMenus(userId?: number): Promise<Menu[]> {
+    const queryBuilder = this.menuRepository
+      .createQueryBuilder('menu')
+      .orderBy('RAND()')
+      .take(5);
+
+    if (userId) {
+      const { teamId } = await this.teamService.getMyTeam(userId);
+      queryBuilder.where('menu.teamId = :teamId', { teamId });
+    } else {
+      queryBuilder.where('menu.shareToSquare = :shareToSquare', { shareToSquare: true });
+    }
+
+    return queryBuilder.getMany();
+  }
+
   async findSquareMenus(pagination: PaginationParams, userId?: number, keyword?: string) {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;

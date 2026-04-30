@@ -38,6 +38,12 @@ export class MenuController {
     return this.menuService.findAll(userId, keyword, categoryId);
   }
 
+  @Get('random')
+  @ApiOperation({ summary: '随机吃什么（随机返回5个菜品）' })
+  async randomFiveMenus(@OptionalUserId() userId: number | undefined) {
+    return this.menuService.randomFiveMenus(userId);
+  }
+
   @Get('square')
   @ApiOperation({ summary: '菜单广场分页列表' })
   @ApiQuery({ name: 'page', required: false, example: 1, description: '页码' })
