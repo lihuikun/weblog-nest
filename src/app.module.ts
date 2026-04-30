@@ -33,6 +33,7 @@ import { CozeWorkflowModule } from './coze-workflow/coze-workflow.module';
 import { StatsModule } from './stats/stats.module';
 import { TeamModule } from './team/team.module';
 import { MenuModule } from './menu/menu.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { MenuModule } from './menu/menu.module';
     StatsModule,
     TeamModule,
     MenuModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [
