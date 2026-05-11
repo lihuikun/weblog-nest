@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserId } from '../common/decorators/require-role.decorator';
 import { OptionalUserId } from '../common/decorators/optional-user-id.decorator';
+import { AddSquareMenuDto } from './dto/add-square-menu.dto';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { MenuService } from './menu.service';
@@ -59,12 +60,14 @@ export class MenuController {
 
   @Post('square/:id/add')
   @UseGuards(AuthGuard)
-  @ApiOperation({ summary: '将广场菜单添加到当前团队菜单' })
+  @ApiOperation({ summary: '将广场菜单添加到当前团队菜单（需指定本团队分类）' })
+  @ApiBody({ type: AddSquareMenuDto })
   async addSquareMenuToTeam(
     @CurrentUserId() userId: number,
     @Param('id', ParseIntPipe) squareMenuId: number,
+    @Body() dto: AddSquareMenuDto,
   ) {
-    return this.menuService.addSquareMenuToTeam(userId, squareMenuId);
+    return this.menuService.addSquareMenuToTeam(userId, squareMenuId, dto.categoryId);
   }
 
   @Get(':id')

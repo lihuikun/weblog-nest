@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { Category } from '../category/entities/category.entity';
 import { TeamService } from '../team/team.service';
 import { UserService } from '../user/user.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
@@ -13,6 +14,8 @@ export class MenuService {
   constructor(
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
     private readonly teamService: TeamService,
     private readonly userService: UserService,
   ) { }
@@ -133,8 +136,19 @@ export class MenuService {
     return menu;
   }
 
-  async addSquareMenuToTeam(userId: number, squareMenuId: number): Promise<Menu> {
+  async addSquareMenuToTeam(
+    userId: number,
+    squareMenuId: number,
+    categoryId: number,
+  ): Promise<Menu> {
     const { teamId } = await this.teamService.getMyTeam(userId);
+
+    const category = await this.categoryRepository.findOne({
+      where: { id: categoryId, teamId },
+    });
+    if (!category) {
+      throw new NotFoundException('分类不存在或不属于当前团队');
+    }
 
     const squareMenu = await this.menuRepository.findOne({
       where: { id: squareMenuId, shareToSquare: true },
@@ -158,7 +172,7 @@ export class MenuService {
     const newMenu = this.menuRepository.create({
       teamId,
       title: squareMenu.title,
-      categoryId: squareMenu.categoryId,
+      categoryId,
       shareToSquare: false,
       squareMenuId: squareMenu.id,
       description: squareMenu.description,
