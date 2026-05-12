@@ -5,6 +5,7 @@ import { randomBytes } from 'crypto';
 import { TeamInvite, TeamInviteStatus } from './entities/team-invite.entity';
 import { User } from '../user/entities/user.entity';
 import { Category } from '../category/entities/category.entity';
+import { Menu } from '../menu/entities/menu.entity';
 import { Order, OrderStatus } from '../order/entities/order.entity';
 import { CreateCategoryDto } from '../category/dto/create-category.dto';
 import { UpdateCategoryDto } from '../category/dto/update-category.dto';
@@ -22,6 +23,8 @@ export class TeamService implements OnModuleInit {
     private readonly categoryRepository: Repository<Category>,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @InjectRepository(Menu)
+    private readonly menuRepository: Repository<Menu>,
   ) { }
 
   /**
@@ -53,22 +56,60 @@ export class TeamService implements OnModuleInit {
    */
   async getMyTeam(userId: number) {
     const user = await this.ensureUserTeam(userId);
-    await this.autoCompleteTimeoutOrders(user.teamId!);
-    const categories = await this.getTeamCategories(userId);
-    const invitedUsers = await this.getInvitedUsers(userId);
-    const orderCount = await this.orderRepository.count({
-      where: { teamId: user.teamId },
-    });
-    const completedOrderCount = await this.orderRepository.count({
-      where: { teamId: user.teamId, status: OrderStatus.COMPLETED },
-    });
+    const teamId = user.teamId!;
+    await this.autoCompleteTimeoutOrders(teamId);
+
+    const [categories, teamMembers, orderStatsRaw, menuCount] = await Promise.all([
+      // 团队菜单分类列表
+      this.categoryRepository.find({ where: { teamId }, order: { id: 'DESC' } }),
+      // 团队成员列表
+      this.userRepository.find({
+        where: { teamId },
+        select: ['id', 'nickname', 'avatarUrl', 'email'],
+        order: { id: 'ASC' },
+      }),
+      // 团队订单：总数、已完成（一次聚合）
+      this.orderRepository
+        .createQueryBuilder('o')
+        .select('COUNT(o.id)', 'orderCount')
+        .addSelect(
+          `SUM(CASE WHEN o.status = :completed THEN 1 ELSE 0 END)`,
+          'completedOrderCount',
+        )
+        .where('o.teamId = :teamId', { teamId })
+        .setParameters({ completed: OrderStatus.COMPLETED })
+        .getRawOne<{
+          orderCount: string;
+          completedOrderCount: string | null;
+        }>(),
+      // 团队菜单条数（menu.teamId）
+      this.menuRepository.count({ where: { teamId } }),
+    ]);
+
+    const toInt = (v: string | null | undefined) => {
+      const n = Number(v ?? 0);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const orderCount = toInt(orderStatsRaw?.orderCount);
+    const completedOrderCount = toInt(orderStatsRaw?.completedOrderCount);
+    // 团队被邀请加入的用户列表
+    const invitedUsers = teamMembers
+      .filter(m => m.id !== userId)
+      .map(m => ({
+        id: m.id,
+        nickname: m.nickname,
+        avatarUrl: m.avatarUrl,
+        email: m.email,
+      }));
+
     return {
       userId: user.id,
-      teamId: user.teamId,
-      teamName: user.teamName || `Team-${user.teamId}`,
+      teamId,
+      teamName: user.teamName || `Team-${teamId}`,
       isTeamLocked: user.isTeamLocked,
       orderCount,
       completedOrderCount,
+      menuCount,
       categories,
       invitedUsers,
     };
