@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+import type { Menu } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import { TeamService } from '../team/team.service';
-import { Menu } from '../menu/entities/menu.entity';
 import { Cart } from './entities/cart.entity';
 import { AddCartDto } from './dto/add-cart.dto';
 import { UpdateCartQuantityDto } from './dto/update-cart-quantity.dto';
@@ -12,16 +13,15 @@ export class CartService {
   constructor(
     @InjectRepository(Cart)
     private readonly cartRepository: Repository<Cart>,
-    @InjectRepository(Menu)
-    private readonly menuRepository: Repository<Menu>,
+    private readonly prisma: PrismaService,
     private readonly teamService: TeamService,
-  ) { }
+  ) {}
 
   async add(userId: number, dto: AddCartDto): Promise<Cart> {
     const { teamId } = await this.teamService.getMyTeam(userId);
     const { menuId, quantity = 1 } = dto;
 
-    const menu = await this.menuRepository.findOne({ where: { id: menuId, teamId } });
+    const menu = await this.prisma.menu.findFirst({ where: { id: menuId, teamId } });
     if (!menu) throw new BadRequestException('菜单不存在或不属于当前团队');
 
     const existing = await this.cartRepository.findOne({
@@ -63,10 +63,11 @@ export class CartService {
       return { list: [], total: 0 };
     }
 
-    const menus = await this.menuRepository.find({
-      where: { teamId, id: In(list.map(item => item.menuId)) },
+    const menuIds = list.map(item => item.menuId);
+    const menus = await this.prisma.menu.findMany({
+      where: { teamId, id: { in: menuIds } },
     });
-    const menuMap = new Map(menus.map(menu => [menu.id, menu]));
+    const menuMap = new Map<number, Menu>(menus.map(menu => [menu.id, menu]));
 
     return {
       total: list.length,
@@ -78,15 +79,17 @@ export class CartService {
           quantity: item.quantity,
           createTime: item.createTime,
           updatedTime: item.updatedTime,
-          menu: menu ? {
-            id: menu.id,
-            title: menu.title,
-            cover: menu.cover,
-            price: menu.price,
-            duration: menu.duration,
-            difficulty: menu.difficulty,
-            recommendation: menu.recommendation,
-          } : null,
+          menu: menu
+            ? {
+                id: menu.id,
+                title: menu.title,
+                cover: menu.cover,
+                price: menu.price,
+                duration: menu.duration,
+                difficulty: menu.difficulty,
+                recommendation: menu.recommendation,
+              }
+            : null,
         };
       }),
     };

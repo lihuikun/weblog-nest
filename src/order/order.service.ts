@@ -2,8 +2,9 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { In, Repository } from 'typeorm';
+import type { Menu } from '@prisma/client';
 import { PaginationParams } from '../common/decorators/pagination.decorator';
-import { Menu } from '../menu/entities/menu.entity';
+import { PrismaService } from '../prisma/prisma.service';
 import { TeamService } from '../team/team.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -19,10 +20,9 @@ export class OrderService {
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemRepository: Repository<OrderItem>,
-    @InjectRepository(Menu)
-    private readonly menuRepository: Repository<Menu>,
+    private readonly prisma: PrismaService,
     private readonly teamService: TeamService,
-  ) { }
+  ) {}
 
   async create(userId: number, dto: CreateOrderDto) {
     const { teamId } = await this.teamService.getMyTeam(userId);
@@ -37,8 +37,8 @@ export class OrderService {
     const mergedItems = [...mergedMap.entries()].map(([menuId, quantity]) => ({ menuId, quantity }));
 
     const menuIds = mergedItems.map(item => item.menuId);
-    const menus = await this.menuRepository.find({
-      where: { id: In(menuIds), teamId },
+    const menus = await this.prisma.menu.findMany({
+      where: { id: { in: menuIds }, teamId },
     });
     if (menus.length !== menuIds.length) {
       throw new BadRequestException('存在无效菜单，无法创建订单');
@@ -98,7 +98,7 @@ export class OrderService {
       order: { id: 'ASC' },
     });
     const menuIds = [...new Set(orderItems.map(item => item.menuId))];
-    const menus = await this.menuRepository.find({ where: { id: In(menuIds), teamId } });
+    const menus = await this.prisma.menu.findMany({ where: { id: { in: menuIds }, teamId } });
     const menuMap = new Map(menus.map(menu => [menu.id, menu]));
 
     const itemsByOrderId = new Map<number, OrderItem[]>();
