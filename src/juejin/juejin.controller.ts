@@ -21,7 +21,14 @@ export class JuejinController {
                 },
             });
 
-            res.setHeader('Content-Type', response.headers['content-type'] || 'image/jpeg');
+            const rawCt = response.headers['content-type'];
+            const contentType =
+              typeof rawCt === 'string'
+                ? rawCt
+                : Array.isArray(rawCt) && typeof rawCt[0] === 'string'
+                  ? rawCt[0]
+                  : 'image/jpeg';
+            res.setHeader('Content-Type', contentType);
             res.send(response.data);
         } catch (e) {
             res.status(500).send('图片加载失败');

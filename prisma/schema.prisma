@@ -1,0 +1,117 @@
+// 与现有 MySQL 表对齐；配置 DATABASE_URL 后执行 pnpm prisma:generate
+// 注意：勿重复注册与 Prisma 同表的 TypeORM Entity，避免双 ORM 争用
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum LoginType {
+  email
+  wechat_mini
+  wechat_official
+  github
+}
+
+enum Role {
+  admin
+  subAdmin
+  user
+}
+
+enum TeamInviteStatus {
+  pending
+  accepted
+  expired
+  revoked
+}
+
+enum OrderStatus {
+  MAKING
+  COMPLETED
+}
+
+model User {
+  id                  Int       @id @default(autoincrement())
+  nickname            String?   @db.VarChar(255)
+  avatarUrl           String?   @map("avatarUrl") @db.VarChar(255)
+  openId              String?   @unique @map("openId") @db.VarChar(255)
+  email               String?   @unique @db.VarChar(255)
+  password            String?   @db.VarChar(255)
+  loginType           LoginType @map("loginType")
+  token               String?   @db.VarChar(255)
+  teamId              Int?      @map("teamId")
+  teamName            String?   @map("teamName") @db.VarChar(100)
+  isTeamLocked        Boolean   @default(false) @map("isTeamLocked")
+  role                Role      @default(user)
+  isPremium           Boolean   @default(false) @map("isPremium")
+  receiveArticleEmail Boolean   @default(false) @map("receiveArticleEmail")
+  createTime          DateTime? @map("createTime")
+  updatedTime         DateTime? @map("updatedTime")
+
+  @@map("user")
+}
+
+model TeamInvite {
+  id            Int              @id @default(autoincrement())
+  targetTeamId  Int              @map("targetTeamId")
+  inviterUserId Int              @map("inviterUserId")
+  code          String           @unique @db.VarChar(16)
+  status        TeamInviteStatus @default(pending)
+  expireAt      DateTime         @map("expireAt")
+  createTime    DateTime         @default(now()) @map("createTime")
+  updatedTime   DateTime         @updatedAt @map("updatedTime")
+
+  @@map("team_invite")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  teamId      Int      @default(0) @map("teamId")
+  name        String   @db.VarChar(255)
+  description String   @db.Text
+  image       String?  @db.VarChar(255)
+  status      String   @default("active") @db.VarChar(50)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("category")
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  orderNo     String      @unique @map("orderNo") @db.VarChar(40)
+  teamId      Int         @map("teamId")
+  userId      Int         @map("userId")
+  status      OrderStatus @default(MAKING)
+  createTime  DateTime    @default(now()) @map("createTime")
+  updatedTime DateTime    @updatedAt @map("updatedTime")
+
+  @@map("order")
+}
+
+model Menu {
+  id             Int      @id @default(autoincrement())
+  teamId         Int      @map("teamId")
+  userId         Int?     @map("userId")
+  title          String   @db.VarChar(20)
+  categoryId     Int?     @default(1) @map("categoryId")
+  shareToSquare  Boolean  @default(false) @map("shareToSquare")
+  squareMenuId   Int?     @map("squareMenuId")
+  description    String   @db.Text
+  steps          Json?
+  ingredients    Json?
+  cover          String   @db.VarChar(255)
+  price          Decimal  @db.Decimal(10, 2)
+  recommendation Int      @db.TinyInt
+  duration       String?  @db.VarChar(50)
+  difficulty     String?  @db.VarChar(50)
+  createTime     DateTime @default(now()) @map("createTime")
+  updatedTime    DateTime @updatedAt @map("updatedTime")
+
+  @@map("menu")
+}
