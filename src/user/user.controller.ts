@@ -30,29 +30,6 @@ export class UserController {
     return this.authService.getUserList(pagination.page, pagination.pageSize, keyword);
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: '删除用户' })
-  @ApiParam({ name: 'id', description: '用户ID' })
-  async deleteUser(@Param('id') id: number) {
-    return this.authService.deleteUser(id);
-  }
-
-  @Put(':id')
-  @ApiOperation({ summary: '更新用户信息（部分字段）' })
-  @ApiParam({ name: 'id', description: '用户 ID' })
-  @ApiBody({ type: CreateUserDto })
-  async updateUserPartial(
-    @Param('id') id: number,
-    @Body() userDto: Partial<CreateUserDto>,
-    @Req() req: any,
-  ): Promise<User> {
-    // 关键日志：打印请求头token和参数
-    this.logger.log(
-      `PUT /user/${id} | host=${req?.headers?.host ?? ''} | ua=${req?.headers?.['user-agent'] ?? ''} | authorization=${maskAuthorizationHeader(req?.headers?.authorization)} | id=${id} | userDto=${JSON.stringify(userDto)}`,
-    );
-    return this.authService.updateUserPartial(id, userDto);
-  }
-
   @Post('check-user')
   @ApiOperation({ summary: '检查用户注册状态' })
   @ApiBody({
@@ -119,5 +96,44 @@ export class UserController {
       `GET /user/profile | host=${req?.headers?.host ?? ''} | ua=${req?.headers?.['user-agent'] ?? ''} | authorization=${maskAuthorizationHeader(req?.headers?.authorization)} | userId=${userId} | query=${JSON.stringify(req?.query ?? {})} | user=${JSON.stringify(req?.user ?? {})}`,
     );
     return this.authService.getUserById(userId);
+  }
+
+  @Put('profile')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '更新当前登录用户个人信息' })
+  @ApiBody({ type: CreateUserDto })
+  async updateProfile(
+    @CurrentUserId() userId: number,
+    @Body() userDto: Partial<CreateUserDto>,
+    @Req() req: any,
+  ): Promise<User> {
+    // 关键日志：打印请求头token和参数
+    this.logger.log(
+      `PUT /user/profile | host=${req?.headers?.host ?? ''} | ua=${req?.headers?.['user-agent'] ?? ''} | authorization=${maskAuthorizationHeader(req?.headers?.authorization)} | userId=${userId} | userDto=${JSON.stringify(userDto)}`,
+    );
+    return this.authService.updateUserPartial(userId, userDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: '删除用户' })
+  @ApiParam({ name: 'id', description: '用户ID' })
+  async deleteUser(@Param('id') id: number) {
+    return this.authService.deleteUser(id);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: '更新用户信息（部分字段）' })
+  @ApiParam({ name: 'id', description: '用户 ID' })
+  @ApiBody({ type: CreateUserDto })
+  async updateUserPartial(
+    @Param('id') id: number,
+    @Body() userDto: Partial<CreateUserDto>,
+    @Req() req: any,
+  ): Promise<User> {
+    // 关键日志：打印请求头token和参数
+    this.logger.log(
+      `PUT /user/${id} | host=${req?.headers?.host ?? ''} | ua=${req?.headers?.['user-agent'] ?? ''} | authorization=${maskAuthorizationHeader(req?.headers?.authorization)} | id=${id} | userDto=${JSON.stringify(userDto)}`,
+    );
+    return this.authService.updateUserPartial(id, userDto);
   }
 }
