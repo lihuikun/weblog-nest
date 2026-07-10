@@ -83,28 +83,41 @@ export class MenuService {
       queryBuilder.andWhere('menu.title LIKE :keyword', { keyword: `%${keyword}%` });
     }
 
-    const [list, total] = await queryBuilder.getManyAndCount();
+    // getManyAndCount internally executes these queries in sequence. They are
+    // independent, so run them concurrently to shorten the list endpoint's
+    // database wait time.
+    const [list, total] = await Promise.all([
+      queryBuilder.getMany(),
+      queryBuilder.clone().getCount(),
+    ]);
     if (!list.length) {
       return { list: [], total, page, pageSize };
     }
 
-    const usersInfo = await this.userService.getUsersBasicInfo(
+    const usersInfoPromise = this.userService.getUsersBasicInfo(
       [...new Set(list.map(item => item.userId).filter(id => id))],
     );
 
-    let addedIdSet = new Set<number>();
-    if (userId) {
-      const { teamId } = await this.teamService.getMyTeam(userId);
-      const squareIds = list.map(item => item.id);
-      const addedMenus = await this.menuRepository.find({
-        where: {
-          teamId,
-          squareMenuId: In(squareIds),
-        },
-        select: ['squareMenuId'],
-      });
-      addedIdSet = new Set(addedMenus.map(item => item.squareMenuId).filter(Boolean));
-    }
+    const addedIdSetPromise = userId
+      ? this.teamService.getMyTeam(userId).then(async ({ teamId }) => {
+          const squareIds = list.map(item => item.id);
+          const addedMenus = await this.menuRepository.find({
+            where: {
+              teamId,
+              squareMenuId: In(squareIds),
+            },
+            select: ['squareMenuId'],
+          });
+          return new Set(
+            addedMenus.map(item => item.squareMenuId).filter(Boolean),
+          );
+        })
+      : Promise.resolve(new Set<number>());
+
+    const [usersInfo, addedIdSet] = await Promise.all([
+      usersInfoPromise,
+      addedIdSetPromise,
+    ]);
 
     return {
       total,

@@ -1,6 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity()
+@Index('IDX_menu_square_id', ['shareToSquare', 'id'])
+@Index('IDX_menu_team_square', ['teamId', 'squareMenuId'])
 export class Menu {
   @PrimaryGeneratedColumn()
   id: number;
