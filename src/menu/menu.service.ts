@@ -55,7 +55,6 @@ export class MenuService {
   async randomFiveMenus(userId?: number): Promise<Menu[]> {
     const queryBuilder = this.menuRepository
       .createQueryBuilder('menu')
-      .orderBy('RAND()')
       .take(5);
 
     if (userId) {
@@ -64,6 +63,16 @@ export class MenuService {
     } else {
       queryBuilder.where('menu.shareToSquare = :shareToSquare', { shareToSquare: true });
     }
+
+    const total = await queryBuilder.clone().getCount();
+    if (total === 0) {
+      return [];
+    }
+
+    const skip = total > 5 ? Math.floor(Math.random() * (total - 4)) : 0;
+    queryBuilder
+      .orderBy('menu.id', 'DESC')
+      .skip(skip);
 
     return queryBuilder.getMany();
   }
@@ -156,16 +165,18 @@ export class MenuService {
   ): Promise<Menu> {
     const { teamId } = await this.teamService.getMyTeam(userId);
 
-    const category = await this.categoryRepository.findOne({
-      where: { id: categoryId, teamId },
-    });
+    const [category, squareMenu] = await Promise.all([
+      this.categoryRepository.findOne({
+        where: { id: categoryId, teamId },
+      }),
+      this.menuRepository.findOne({
+        where: { id: squareMenuId, shareToSquare: true },
+      }),
+    ]);
+
     if (!category) {
       throw new NotFoundException('分类不存在或不属于当前团队');
     }
-
-    const squareMenu = await this.menuRepository.findOne({
-      where: { id: squareMenuId, shareToSquare: true },
-    });
     if (!squareMenu) {
       throw new NotFoundException('广场菜单不存在');
     }
@@ -175,10 +186,10 @@ export class MenuService {
       throw new BadRequestException('该菜单已在当前团队中');
     }
 
-    const existing = await this.menuRepository.findOne({
+    const existingCount = await this.menuRepository.count({
       where: { teamId, squareMenuId },
     });
-    if (existing) {
+    if (existingCount > 0) {
       throw new BadRequestException('该菜单已添加到当前团队');
     }
 
