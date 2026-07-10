@@ -44,13 +44,18 @@ export class UserController {
   async updateUserPartial(
     @Param('id') id: number,
     @Body() userDto: Partial<CreateUserDto>,
+    @Req() req: any,
   ): Promise<User> {
+    // 关键日志：打印请求头token和参数
+    this.logger.log(
+      `PUT /user/${id} | host=${req?.headers?.host ?? ''} | ua=${req?.headers?.['user-agent'] ?? ''} | authorization=${maskAuthorizationHeader(req?.headers?.authorization)} | id=${id} | userDto=${JSON.stringify(userDto)}`,
+    );
     return this.authService.updateUserPartial(id, userDto);
   }
 
   @Post('check-user')
   @ApiOperation({ summary: '检查用户注册状态' })
-  @ApiBody({ 
+  @ApiBody({
     schema: {
       type: 'object',
       properties: {

@@ -364,7 +364,14 @@ export class UserService {
 
   // 部分字段更新用户
   async updateUserPartial(id: number, dto: Partial<CreateUserDto>): Promise<User> {
+    // 关键日志：打印入参
+    this.logger.log(`updateUserPartial | id=${id} | dto=${JSON.stringify(dto)}`);
+    
     const user = await this.userRepository.findOne({ where: { id } });
+    
+    // 关键日志：打印查询结果
+    this.logger.log(`updateUserPartial | query result=${user ? JSON.stringify({ id: user.id, nickname: user.nickname, email: user.email }) : 'null'}`);
+    
     if (!user) throw new Error('用户不存在');
     Object.assign(user, dto);
     await this.userRepository.save(user);
