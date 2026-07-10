@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Put, Get, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Param, Put, Get, Delete, Query, UseGuards, Req, Logger } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ApiBody, ApiOperation, ApiParam, ApiTags, ApiQuery } from '@nestjs/swagger';
@@ -10,10 +10,12 @@ import { CreateGithubLoginDto } from './dto/github-login.dto';
 import { Pagination, PaginationParams } from '../common/decorators/pagination.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { CurrentUserId } from 'src/common/decorators/require-role.decorator';
+import { maskAuthorizationHeader } from 'src/common/utils/mask-token.util';
 
 @ApiTags('用户管理')
 @Controller('user')
 export class UserController {
+  private readonly logger = new Logger(UserController.name);
   constructor(private readonly authService: UserService) { }
 
   @Get('list')
@@ -106,7 +108,11 @@ export class UserController {
   @Get('profile')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: '获取当前登录用户个人信息' })
-  async getProfile(@CurrentUserId() userId: number) {
+  async getProfile(@CurrentUserId() userId: number, @Req() req: any) {
+    // 关键日志：用于对比客户端传参/请求头/解码结果，不改变原有业务逻辑
+    this.logger.log(
+      `GET /user/profile | host=${req?.headers?.host ?? ''} | ua=${req?.headers?.['user-agent'] ?? ''} | authorization=${maskAuthorizationHeader(req?.headers?.authorization)} | userId=${userId} | query=${JSON.stringify(req?.query ?? {})} | user=${JSON.stringify(req?.user ?? {})}`,
+    );
     return this.authService.getUserById(userId);
   }
 }

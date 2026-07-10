@@ -387,11 +387,13 @@ export class UserService {
 
   // 获取用户完整信息 - 公共方法
   async getUserById(userId: number): Promise<User> {
+    this.logger.log(`getUserById | userId=${userId}`);
     const user = await this.userRepository.findOne({
       where: { id: userId }
     });
 
     if (!user) {
+      this.logger.warn(`getUserById | user not found | userId=${userId}`);
       throw new UnauthorizedException('用户不存在');
     }
 
