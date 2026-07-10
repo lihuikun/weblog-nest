@@ -57,33 +57,38 @@ export class TeamService implements OnModuleInit {
   async getMyTeam(userId: number) {
     const user = await this.ensureUserTeam(userId);
     const teamId = user.teamId!;
+    const categoriesPromise = this.categoryRepository.find({
+      where: { teamId },
+      order: { id: 'DESC' },
+    });
+    const teamMembersPromise = this.userRepository.find({
+      where: { teamId },
+      select: ['id', 'nickname', 'avatarUrl', 'email'],
+      order: { id: 'ASC' },
+    });
+    const menuCountPromise = this.menuRepository.count({ where: { teamId } });
+
     await this.autoCompleteTimeoutOrders(teamId);
 
+    const orderStatsPromise = this.orderRepository
+      .createQueryBuilder('o')
+      .select('COUNT(o.id)', 'orderCount')
+      .addSelect(
+        `SUM(CASE WHEN o.status = :completed THEN 1 ELSE 0 END)`,
+        'completedOrderCount',
+      )
+      .where('o.teamId = :teamId', { teamId })
+      .setParameters({ completed: OrderStatus.COMPLETED })
+      .getRawOne<{
+        orderCount: string;
+        completedOrderCount: string | null;
+      }>();
+
     const [categories, teamMembers, orderStatsRaw, menuCount] = await Promise.all([
-      // 团队菜单分类列表
-      this.categoryRepository.find({ where: { teamId }, order: { id: 'DESC' } }),
-      // 团队成员列表
-      this.userRepository.find({
-        where: { teamId },
-        select: ['id', 'nickname', 'avatarUrl', 'email'],
-        order: { id: 'ASC' },
-      }),
-      // 团队订单：总数、已完成（一次聚合）
-      this.orderRepository
-        .createQueryBuilder('o')
-        .select('COUNT(o.id)', 'orderCount')
-        .addSelect(
-          `SUM(CASE WHEN o.status = :completed THEN 1 ELSE 0 END)`,
-          'completedOrderCount',
-        )
-        .where('o.teamId = :teamId', { teamId })
-        .setParameters({ completed: OrderStatus.COMPLETED })
-        .getRawOne<{
-          orderCount: string;
-          completedOrderCount: string | null;
-        }>(),
-      // 团队菜单条数（menu.teamId）
-      this.menuRepository.count({ where: { teamId } }),
+      categoriesPromise,
+      teamMembersPromise,
+      orderStatsPromise,
+      menuCountPromise,
     ]);
 
     const toInt = (v: string | null | undefined) => {

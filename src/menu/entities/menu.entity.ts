@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 @Entity()
 @Index('IDX_menu_square_id', ['shareToSquare', 'id'])
 @Index('IDX_menu_team_square', ['teamId', 'squareMenuId'])
+@Index('IDX_menu_team_category', ['teamId', 'categoryId'])
 export class Menu {
   @PrimaryGeneratedColumn()
   id: number;

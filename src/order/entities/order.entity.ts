@@ -13,6 +13,7 @@ export enum OrderStatus {
 }
 
 @Entity()
+@Index('IDX_order_team_status_create', ['teamId', 'status', 'createTime'])
 export class Order {
   @PrimaryGeneratedColumn()
   id: number;
