@@ -276,6 +276,16 @@ export class MenuService {
     return this.menuRepository.save(menu);
   }
 
+  // 仅超级管理员可调用（由 RoleGuard 保证），删除广场菜单（连同源菜单记录一并删除）
+  async removeSquareMenu(squareMenuId: number): Promise<{ success: boolean }> {
+    const result = await this.menuRepository.delete({
+      id: squareMenuId,
+      shareToSquare: true,
+    });
+    if (result.affected === 0) throw new NotFoundException('广场菜单不存在');
+    return { success: true };
+  }
+
   async remove(userId: number, id: number): Promise<{ success: boolean }> {
     const { teamId } = await this.teamService.getMyTeam(userId);
     const result = await this.menuRepository.delete({ id, teamId });

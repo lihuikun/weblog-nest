@@ -74,6 +74,13 @@ export class MenuController {
     return this.menuService.updateSquareCategory(squareMenuId, dto.squareCategoryId);
   }
 
+  @Delete('square/:id')
+  @RequireRole(Role.ADMIN)
+  @ApiOperation({ summary: '删除广场菜单（仅超级管理员）' })
+  async removeSquareMenu(@Param('id', ParseIntPipe) squareMenuId: number) {
+    return this.menuService.removeSquareMenu(squareMenuId);
+  }
+
   @Post('square/:id/add')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: '将广场菜单添加到当前团队菜单（需指定本团队分类）' })
