@@ -22,6 +22,11 @@ export class Menu {
   @Column({ type: 'int', default: 1 })
   categoryId?: number;
 
+  // 菜单广场分类ID（全局分类，与团队分类独立），已有历史数据为 null 不处理
+  @Index()
+  @Column({ type: 'int', nullable: true })
+  squareCategoryId?: number;
+
   @Column({ type: 'boolean', default: false })
   shareToSquare: boolean;
 

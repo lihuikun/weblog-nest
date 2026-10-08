@@ -6,7 +6,10 @@ import { OptionalUserId } from '../common/decorators/optional-user-id.decorator'
 import { AddSquareMenuDto } from './dto/add-square-menu.dto';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
+import { UpdateMenuSquareCategoryDto } from './dto/update-square-category.dto';
 import { MenuService } from './menu.service';
+import { RequireRole } from '../common/decorators/require-role.decorator';
+import { Role } from '../user/entities/user.entity';
 import { Pagination, PaginationParams } from '../common/decorators/pagination.decorator';
 
 @ApiTags('菜单管理')
@@ -50,12 +53,25 @@ export class MenuController {
   @ApiQuery({ name: 'page', required: false, example: 1, description: '页码' })
   @ApiQuery({ name: 'pageSize', required: false, example: 10, description: '每页条数' })
   @ApiQuery({ name: 'keyword', required: false, example: '鸡', description: '菜名关键词（模糊搜索）' })
+  @ApiQuery({ name: 'squareCategoryId', required: false, example: 1, description: '广场分类ID（可选）' })
   async findSquareMenus(
     @OptionalUserId() userId: number | undefined,
     @Pagination() pagination: PaginationParams,
     @Query('keyword') keyword?: string,
+    @Query('squareCategoryId') squareCategoryId?: number,
   ) {
-    return this.menuService.findSquareMenus(pagination, userId, keyword);
+    return this.menuService.findSquareMenus(pagination, userId, keyword, squareCategoryId);
+  }
+
+  @Put('square/:id/category')
+  @RequireRole(Role.ADMIN)
+  @ApiOperation({ summary: '修改广场菜单的广场分类（仅超级管理员）' })
+  @ApiBody({ type: UpdateMenuSquareCategoryDto })
+  async updateSquareCategory(
+    @Param('id', ParseIntPipe) squareMenuId: number,
+    @Body() dto: UpdateMenuSquareCategoryDto,
+  ) {
+    return this.menuService.updateSquareCategory(squareMenuId, dto.squareCategoryId);
   }
 
   @Post('square/:id/add')

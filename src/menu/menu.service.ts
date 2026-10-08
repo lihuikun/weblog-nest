@@ -1,7 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as nodemailer from 'nodemailer';
 import { In, Repository } from 'typeorm';
 import { Category } from '../category/entities/category.entity';
+import { SquareCategory } from '../square-category/entities/square-category.entity';
 import { TeamService } from '../team/team.service';
 import { UserService } from '../user/user.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
@@ -11,14 +14,30 @@ import { PaginationParams } from '../common/decorators/pagination.decorator';
 
 @Injectable()
 export class MenuService {
+  private readonly logger = new Logger(MenuService.name);
+  private readonly transporter: nodemailer.Transporter;
+
   constructor(
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+    @InjectRepository(SquareCategory)
+    private readonly squareCategoryRepository: Repository<SquareCategory>,
     private readonly teamService: TeamService,
     private readonly userService: UserService,
-  ) { }
+    private readonly configService: ConfigService,
+  ) {
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.qq.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: this.configService.get<string>('EMAIL_USER'),
+        pass: this.configService.get<string>('EMAIL_PASS'),
+      },
+    });
+  }
 
   async create(userId: number, dto: CreateMenuDto): Promise<Menu> {
     const { teamId } = await this.teamService.getMyTeam(userId);
@@ -29,6 +48,11 @@ export class MenuService {
     if (!saved.squareMenuId) {
       saved.squareMenuId = saved.id;
       await this.menuRepository.save(saved);
+    }
+
+    // 开启分享到广场时，邮件通知管理员
+    if (saved.shareToSquare) {
+      void this.sendSquareShareEmail(saved, userId);
     }
 
     return saved;
@@ -77,7 +101,12 @@ export class MenuService {
     return queryBuilder.getMany();
   }
 
-  async findSquareMenus(pagination: PaginationParams, userId?: number, keyword?: string) {
+  async findSquareMenus(
+    pagination: PaginationParams,
+    userId?: number,
+    keyword?: string,
+    squareCategoryId?: number,
+  ) {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
 
@@ -90,6 +119,10 @@ export class MenuService {
 
     if (keyword) {
       queryBuilder.andWhere('menu.title LIKE :keyword', { keyword: `%${keyword}%` });
+    }
+
+    if (squareCategoryId !== undefined && squareCategoryId !== null) {
+      queryBuilder.andWhere('menu.squareCategoryId = :squareCategoryId', { squareCategoryId });
     }
 
     // getManyAndCount internally executes these queries in sequence. They are
@@ -214,10 +247,33 @@ export class MenuService {
 
   async update(userId: number, id: number, dto: UpdateMenuDto): Promise<Menu> {
     const { teamId } = await this.teamService.getMyTeam(userId);
+    const before = await this.menuRepository.findOne({ where: { id, teamId } });
     await this.menuRepository.update({ id, teamId }, { ...dto, userId });
     const updated = await this.menuRepository.findOne({ where: { id, teamId } });
     if (!updated) throw new NotFoundException('菜单不存在');
+
+    // 编辑时从关闭改为开启分享到广场，邮件通知管理员
+    if (updated.shareToSquare && !before?.shareToSquare) {
+      void this.sendSquareShareEmail(updated, userId);
+    }
+
     return updated;
+  }
+
+  // 仅超级管理员可调用（由 RoleGuard 保证），修改广场菜单的广场分类
+  async updateSquareCategory(squareMenuId: number, squareCategoryId: number): Promise<Menu> {
+    const menu = await this.menuRepository.findOne({
+      where: { id: squareMenuId, shareToSquare: true },
+    });
+    if (!menu) throw new NotFoundException('广场菜单不存在');
+
+    const squareCategory = await this.squareCategoryRepository.findOne({
+      where: { id: squareCategoryId },
+    });
+    if (!squareCategory) throw new NotFoundException('广场分类不存在');
+
+    menu.squareCategoryId = squareCategoryId;
+    return this.menuRepository.save(menu);
   }
 
   async remove(userId: number, id: number): Promise<{ success: boolean }> {
@@ -225,5 +281,80 @@ export class MenuService {
     const result = await this.menuRepository.delete({ id, teamId });
     if (result.affected === 0) throw new NotFoundException('菜单不存在');
     return { success: true };
+  }
+
+  private async sendSquareShareEmail(menu: Menu, userId: number): Promise<void> {
+    try {
+      const recipient =
+        this.configService.get<string>('BACKUP_EMAIL') ||
+        'lihk180542@gmail.com';
+      const sender = this.configService.get<string>('EMAIL_USER');
+      if (!sender) {
+        this.logger.warn('EMAIL_USER 未配置，跳过广场分享邮件');
+        return;
+      }
+
+      let sharer = '未知用户';
+      try {
+        const usersInfo = await this.userService.getUsersBasicInfo([userId]);
+        const u = usersInfo[userId];
+        if (u) sharer = u.nickname || `用户${u.id}`;
+      } catch { /* 忽略 */ }
+
+      const ingredients = Array.isArray(menu.ingredients)
+        ? menu.ingredients.map(i => `<li>${i}</li>`).join('')
+        : '';
+      const steps = Array.isArray(menu.steps)
+        ? menu.steps.map((s, idx) => `<li><strong>第${idx + 1}步：</strong>${s}</li>`).join('')
+        : '';
+
+      const coverHtml = menu.cover
+        ? `<img src="${menu.cover}" style="max-width:320px;border-radius:8px;margin:12px 0;" />`
+        : '';
+
+      const priceHtml = typeof menu.price === 'number'
+        ? `<div style="margin-top:8px;color:#d48806;font-weight:600;font-size:16px;">价格：¥${menu.price.toFixed(2)}</div>`
+        : '';
+
+      const timeLabel = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+
+      await this.transporter.sendMail({
+        from: `"前端的日常" <${sender}>`,
+        to: recipient,
+        subject: `菜单广场新分享 - ${menu.title}`,
+        html: `
+        <div style="max-width:600px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#262626;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #f0f0f0;">
+          <div style="background:linear-gradient(90deg,#1677ff,#36cfc9);padding:24px 32px;color:#fff;">
+            <h2 style="margin:0;font-size:22px;font-weight:600;">菜单广场新分享</h2>
+            <p style="margin:6px 0 0;opacity:.92;font-size:14px;">有人将新菜单分享到了广场，快来看看吧～</p>
+          </div>
+          <div style="padding:24px 32px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#52c41a;"></span>
+              <span style="color:#8c8c8c;font-size:13px;">${timeLabel}</span>
+              <span style="margin-left:auto;color:#595959;font-size:13px;">分享者：<strong>${sharer}</strong></span>
+            </div>
+            ${coverHtml}
+            <h3 style="margin:12px 0 8px;font-size:20px;color:#1677ff;">${menu.title}</h3>
+            <div style="color:#595959;font-size:14px;line-height:1.6;">${menu.description || ''}</div>
+            ${priceHtml}
+            <div style="margin-top:16px;">
+              <div style="font-weight:600;color:#262626;margin-bottom:6px;">食材：</div>
+              <ul style="margin:0;padding-left:18px;color:#595959;font-size:14px;line-height:1.8;">${ingredients || '<li>暂无</li>'}</ul>
+            </div>
+            <div style="margin-top:16px;">
+              <div style="font-weight:600;color:#262626;margin-bottom:6px;">步骤：</div>
+              <ol style="margin:0;padding-left:18px;color:#595959;font-size:14px;line-height:1.8;">${steps || '<li>暂无</li>'}</ol>
+            </div>
+            <div style="margin-top:20px;padding-top:16px;border-top:1px dashed #e8e8e8;color:#8c8c8c;font-size:12px;text-align:center;">
+              本邮件由系统自动发送，请勿直接回复
+            </div>
+          </div>
+        </div>
+      `,
+      });
+    } catch (error) {
+      this.logger.error('发送广场分享邮件失败', error);
+    }
   }
 }

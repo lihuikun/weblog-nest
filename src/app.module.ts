@@ -33,6 +33,7 @@ import { CozeWorkflowModule } from './coze-workflow/coze-workflow.module';
 import { StatsModule } from './stats/stats.module';
 import { TeamModule } from './team/team.module';
 import { MenuModule } from './menu/menu.module';
+import { SquareCategoryModule } from './square-category/square-category.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
 
@@ -76,6 +77,7 @@ import { OrderModule } from './order/order.module';
     StatsModule,
     TeamModule,
     MenuModule,
+    SquareCategoryModule,
     CartModule,
     OrderModule,
   ],

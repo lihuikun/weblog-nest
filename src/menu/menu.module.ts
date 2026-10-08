@@ -6,10 +6,13 @@ import { MenuController } from './menu.controller';
 import { MenuService } from './menu.service';
 import { Menu } from './entities/menu.entity';
 import { Category } from '../category/entities/category.entity';
+import { SquareCategory } from '../square-category/entities/square-category.entity';
+import { User } from '../user/entities/user.entity';
+import { RoleGuard } from '../common/decorators/require-role.decorator';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Menu, Category]), TeamModule, UserModule],
+  imports: [TypeOrmModule.forFeature([Menu, Category, SquareCategory, User]), TeamModule, UserModule],
   controllers: [MenuController],
-  providers: [MenuService],
+  providers: [MenuService, RoleGuard],
 })
 export class MenuModule { }
