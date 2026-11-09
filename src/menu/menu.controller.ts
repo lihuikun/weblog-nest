@@ -7,6 +7,7 @@ import { AddSquareMenuDto } from './dto/add-square-menu.dto';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { UpdateMenuSquareCategoryDto } from './dto/update-square-category.dto';
+import { UpdateMenuSquareHiddenDto } from './dto/update-square-hidden.dto';
 import { MenuService } from './menu.service';
 import { RequireRole } from '../common/decorators/require-role.decorator';
 import { Role } from '../user/entities/user.entity';
@@ -54,13 +55,15 @@ export class MenuController {
   @ApiQuery({ name: 'pageSize', required: false, example: 10, description: '每页条数' })
   @ApiQuery({ name: 'keyword', required: false, example: '鸡', description: '菜名关键词（模糊搜索）' })
   @ApiQuery({ name: 'squareCategoryId', required: false, example: 1, description: '广场分类ID（可选）' })
+  @ApiQuery({ name: 'includeHidden', required: false, example: true, description: '是否包含已隐藏菜单（仅超级管理员生效）' })
   async findSquareMenus(
     @OptionalUserId() userId: number | undefined,
     @Pagination() pagination: PaginationParams,
     @Query('keyword') keyword?: string,
     @Query('squareCategoryId') squareCategoryId?: number,
+    @Query('includeHidden') includeHidden?: string,
   ) {
-    return this.menuService.findSquareMenus(pagination, userId, keyword, squareCategoryId);
+    return this.menuService.findSquareMenus(pagination, userId, keyword, squareCategoryId, includeHidden === 'true');
   }
 
   @Put('square/:id/category')
@@ -72,6 +75,17 @@ export class MenuController {
     @Body() dto: UpdateMenuSquareCategoryDto,
   ) {
     return this.menuService.updateSquareCategory(squareMenuId, dto.squareCategoryId);
+  }
+
+  @Put('square/:id/hidden')
+  @RequireRole(Role.ADMIN)
+  @ApiOperation({ summary: '设置广场菜单隐藏状态（仅超级管理员）' })
+  @ApiBody({ type: UpdateMenuSquareHiddenDto })
+  async updateSquareHidden(
+    @Param('id', ParseIntPipe) squareMenuId: number,
+    @Body() dto: UpdateMenuSquareHiddenDto,
+  ) {
+    return this.menuService.updateSquareHidden(squareMenuId, dto.hidden);
   }
 
   @Delete('square/:id')

@@ -30,6 +30,10 @@ export class Menu {
   @Column({ type: 'boolean', default: false })
   shareToSquare: boolean;
 
+  // 管理员控制的广场隐藏开关：隐藏后不在菜单广场展示，但保留数据可恢复
+  @Column({ type: 'boolean', default: false })
+  squareHidden: boolean;
+
   // 菜单广场菜单ID：新增/查看时会自动补记录
   @Index()
   @Column({ type: 'int', nullable: true })

@@ -11,6 +11,7 @@ import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { Menu } from './entities/menu.entity';
 import { PaginationParams } from '../common/decorators/pagination.decorator';
+import { Role } from '../user/entities/user.entity';
 
 @Injectable()
 export class MenuService {
@@ -85,7 +86,9 @@ export class MenuService {
       const { teamId } = await this.teamService.getMyTeam(userId);
       queryBuilder.where('menu.teamId = :teamId', { teamId });
     } else {
-      queryBuilder.where('menu.shareToSquare = :shareToSquare', { shareToSquare: true });
+      queryBuilder
+        .where('menu.shareToSquare = :shareToSquare', { shareToSquare: true })
+        .andWhere('menu.squareHidden = :squareHidden', { squareHidden: false });
     }
 
     const total = await queryBuilder.clone().getCount();
@@ -106,9 +109,20 @@ export class MenuService {
     userId?: number,
     keyword?: string,
     squareCategoryId?: number,
+    includeHidden = false,
   ) {
     const { page, pageSize } = pagination;
     const skip = (page - 1) * pageSize;
+
+    // 已隐藏的广场菜单仅超级管理员可见（管理后台开关需要）
+    let showHidden = false;
+    if (includeHidden && userId) {
+      try {
+        showHidden = (await this.userService.getUserRole(userId)) === Role.ADMIN;
+      } catch {
+        showHidden = false;
+      }
+    }
 
     const queryBuilder = this.menuRepository
       .createQueryBuilder('menu')
@@ -116,6 +130,10 @@ export class MenuService {
       .orderBy('menu.id', 'DESC')
       .skip(skip)
       .take(pageSize);
+
+    if (!showHidden) {
+      queryBuilder.andWhere('menu.squareHidden = :squareHidden', { squareHidden: false });
+    }
 
     if (keyword) {
       queryBuilder.andWhere('menu.title LIKE :keyword', { keyword: `%${keyword}%` });
@@ -203,7 +221,7 @@ export class MenuService {
         where: { id: categoryId, teamId },
       }),
       this.menuRepository.findOne({
-        where: { id: squareMenuId, shareToSquare: true },
+        where: { id: squareMenuId, shareToSquare: true, squareHidden: false },
       }),
     ]);
 
@@ -273,6 +291,17 @@ export class MenuService {
     if (!squareCategory) throw new NotFoundException('广场分类不存在');
 
     menu.squareCategoryId = squareCategoryId;
+    return this.menuRepository.save(menu);
+  }
+
+  // 仅超级管理员可调用（由 RoleGuard 保证），设置广场菜单隐藏状态
+  async updateSquareHidden(squareMenuId: number, hidden: boolean): Promise<Menu> {
+    const menu = await this.menuRepository.findOne({
+      where: { id: squareMenuId, shareToSquare: true },
+    });
+    if (!menu) throw new NotFoundException('广场菜单不存在');
+
+    menu.squareHidden = hidden;
     return this.menuRepository.save(menu);
   }
 
