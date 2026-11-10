@@ -39,14 +39,14 @@ export class AuthGuard implements CanActivate {
         secret: process.env.JWT_SECRET // 确保使用相同的密钥
       });
 
-      // 只要存在userId加上email或openId之一就算验证通过
+      // 只要存在userId加上任一登录身份标识就算验证通过
       if (!decoded.userId) {
         this.logger.error('无效的token：缺少userId');
         return false;
       }
 
-      if (!decoded.email && !decoded.openId) {
-        this.logger.error('无效的token：缺少email或openId');
+      if (!decoded.email && !decoded.openId && !decoded.gameOpenId) {
+        this.logger.error('无效的token：缺少email、openId或gameOpenId');
         return false;
       }
 

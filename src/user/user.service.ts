@@ -263,6 +263,55 @@ export class UserService {
     return user;
   }
 
+  /**
+   * 微信小游戏登录。小游戏使用独立的 gameOpenId 和用户类型，
+   * 不参与现有小程序/公众号用户的团队逻辑。
+   */
+  async gameLogin(code: string, nickname?: string, avatarUrl?: string): Promise<User> {
+    const response = await axios.get(
+      `https://api.weixin.qq.com/sns/jscode2session?appid=${process.env.WECHAT_GAME_APP_ID}&secret=${process.env.WECHAT_GAME_APP_SECRET}&js_code=${code}&grant_type=authorization_code`,
+    );
+    const { openid, errcode, errmsg } = response.data;
+    this.logger.log(`微信小游戏登录响应: ${JSON.stringify({ openid, errcode, errmsg })}`);
+
+    if (errcode) {
+      throw new UnauthorizedException(`WeChat game API error: ${errmsg}`);
+    }
+    if (!openid) {
+      throw new UnauthorizedException('微信小游戏登录未返回openid');
+    }
+
+    let user = await this.userRepository.findOne({ where: { gameOpenId: openid } });
+
+    if (!user) {
+      user = this.userRepository.create({
+        gameOpenId: openid,
+        nickname: nickname || '',
+        avatarUrl: avatarUrl || '',
+        loginType: LoginType.WECHAT_GAME,
+      });
+      await this.userRepository.save(user);
+    } else {
+      let needUpdate = false;
+      if (nickname && user.nickname !== nickname) {
+        user.nickname = nickname;
+        needUpdate = true;
+      }
+      if (avatarUrl && user.avatarUrl !== avatarUrl) {
+        user.avatarUrl = avatarUrl;
+        needUpdate = true;
+      }
+      if (needUpdate) {
+        await this.userRepository.save(user);
+      }
+    }
+
+    user.token = this.generateToken({ userId: user.id, gameOpenId: user.gameOpenId });
+    await this.userRepository.save(user);
+
+    return user;
+  }
+
   async githubLogin(createGithubLoginDto: CreateGithubLoginDto): Promise<User> {
     const { code,type='default', inviteCode } = createGithubLoginDto;
     console.log('type', type)

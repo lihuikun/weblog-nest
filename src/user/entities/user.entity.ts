@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 export enum LoginType {
   EMAIL = 'email',
   WECHAT_MINI = 'wechat_mini',
+  WECHAT_GAME = 'wechat_game',
   WECHAT_OFFICIAL = 'wechat_official',
   GITHUB = 'github'
 }
@@ -26,6 +27,9 @@ export class User {
 
   @Column({ type: 'varchar', unique: true, nullable: true })
   openId?: string; // 微信用户的唯一标识
+
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  gameOpenId?: string; // 微信小游戏用户的唯一标识
 
   @Column({ type: 'varchar', unique: true, nullable: true })
   email?: string; // 邮箱登录用户的唯一标识

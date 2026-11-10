@@ -7,6 +7,7 @@ import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
 import { CreateGithubLoginDto } from './dto/github-login.dto';
+import { CreateGameLoginDto } from './dto/create-game-login.dto';
 import { Pagination, PaginationParams } from '../common/decorators/pagination.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { CurrentUserId } from 'src/common/decorators/require-role.decorator';
@@ -54,6 +55,13 @@ export class UserController {
   @ApiBody({ type: CreateWechatLoginDto })
   async miniLogin(@Body() dto: CreateWechatLoginDto): Promise<User> {
     return this.authService.wechatLogin(dto.code, 'mini', dto.nickname, dto.avatarUrl, dto.inviteCode);
+  }
+
+  @Post('game-login')
+  @ApiOperation({ summary: '微信小游戏登录' })
+  @ApiBody({ type: CreateGameLoginDto })
+  async gameLogin(@Body() dto: CreateGameLoginDto): Promise<User> {
+    return this.authService.gameLogin(dto.code, dto.nickname, dto.avatarUrl);
   }
 
   @Post('official-login')
