@@ -5,6 +5,7 @@ import { CurrentUserId } from '../common/decorators/require-role.decorator';
 import { CreateTeamInviteDto } from './dto/create-team-invite.dto';
 import { UpdateTeamNameDto } from './dto/update-team-name.dto';
 import { JoinTeamDto } from './dto/join-team.dto';
+import { UpdateRelationshipStartDateDto } from './dto/update-relationship-start-date.dto';
 import { TeamService } from './team.service';
 import { CreateCategoryDto } from '../category/dto/create-category.dto';
 import { UpdateCategoryDto } from '../category/dto/update-category.dto';
@@ -51,6 +52,22 @@ export class TeamController {
     @Body() dto: UpdateTeamNameDto,
   ) {
     return this.teamService.updateTeamName(userId, dto.teamName);
+  }
+
+  @Get('anniversary')
+  @ApiOperation({ summary: '获取团队恋爱纪念日' })
+  async getAnniversary(@CurrentUserId() userId: number) {
+    return this.teamService.getRelationshipStartDate(userId);
+  }
+
+  @Put('anniversary')
+  @ApiOperation({ summary: '设置团队恋爱纪念日' })
+  @ApiBody({ type: UpdateRelationshipStartDateDto })
+  async updateAnniversary(
+    @CurrentUserId() userId: number,
+    @Body() dto: UpdateRelationshipStartDateDto,
+  ) {
+    return this.teamService.updateRelationshipStartDate(userId, dto.relationshipStartDate);
   }
 
   @Get('categories')

@@ -111,6 +111,7 @@ export class TeamService implements OnModuleInit {
       userId: user.id,
       teamId,
       teamName: user.teamName || `Team-${teamId}`,
+      relationshipStartDate: user.relationshipStartDate || null,
       isTeamLocked: user.isTeamLocked,
       orderCount,
       completedOrderCount,
@@ -139,6 +140,32 @@ export class TeamService implements OnModuleInit {
         avatarUrl: item.avatarUrl,
         email: item.email,
       }));
+  }
+
+  /**
+   * 获取当前团队的恋爱纪念日。
+   */
+  async getRelationshipStartDate(userId: number): Promise<{ relationshipStartDate: string | null }> {
+    const user = await this.ensureUserTeam(userId);
+    return { relationshipStartDate: user.relationshipStartDate || null };
+  }
+
+  /**
+   * 更新当前团队的恋爱纪念日，团队成员共享该日期。
+   */
+  async updateRelationshipStartDate(
+    userId: number,
+    relationshipStartDate: string,
+  ): Promise<{ relationshipStartDate: string }> {
+    const user = await this.ensureUserTeam(userId);
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({ relationshipStartDate })
+      .where('teamId = :teamId', { teamId: user.teamId })
+      .execute();
+
+    return { relationshipStartDate };
   }
 
   /**

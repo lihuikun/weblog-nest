@@ -53,6 +53,10 @@ export class User {
   @Column({ type: 'varchar', length: 100, nullable: true })
   teamName?: string;
 
+  // 恋爱纪念日：同一团队成员共享，格式为 YYYY-MM-DD
+  @Column({ type: 'date', nullable: true })
+  relationshipStartDate?: string;
+
   // 团队状态是否锁定：加入他人团队后锁定，不能再次邀请或加入其他团队
   @Column({ type: 'boolean', default: false })
   isTeamLocked: boolean;
