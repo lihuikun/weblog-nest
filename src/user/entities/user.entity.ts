@@ -34,6 +34,10 @@ export class User {
   @Column({ type: 'varchar', unique: true, nullable: true })
   email?: string; // 邮箱登录用户的唯一标识
 
+  // 投喂通知邮箱，与邮箱登录账号分离
+  @Column({ type: 'varchar', nullable: true })
+  notificationEmail?: string;
+
   @Column({ type: 'varchar', nullable: true })
   password?: string; // 邮箱登录用户的密码
 
