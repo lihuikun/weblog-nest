@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsInt, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsInt, IsNotEmpty, IsOptional, Min, ValidateIf } from 'class-validator';
 
 export class CreateOrderItemDto {
   @ApiProperty({ description: '菜单ID', example: 1 })
@@ -20,4 +20,15 @@ export class CreateOrderDto {
   })
   @IsArray({ message: 'items必须是数组' })
   items: CreateOrderItemDto[];
+
+  @ApiProperty({ description: '是否在订单创建后发送邮件通知', required: false, default: false })
+  @IsOptional()
+  @IsBoolean({ message: 'sendEmail必须是布尔值' })
+  sendEmail?: boolean;
+
+  @ApiProperty({ description: '邮件接收地址，sendEmail为true时必填', required: false, example: 'example@qq.com' })
+  @ValidateIf((dto) => dto.sendEmail === true)
+  @IsNotEmpty({ message: '开启邮件通知时必须填写邮箱' })
+  @IsEmail({}, { message: '请输入有效的邮箱地址' })
+  recipientEmail?: string;
 }

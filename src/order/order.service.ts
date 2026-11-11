@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { In, Repository } from 'typeorm';
@@ -13,6 +15,7 @@ import { OrderItem } from './entities/order-item.entity';
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
+  private readonly transporter: nodemailer.Transporter;
 
   constructor(
     @InjectRepository(Order)
@@ -22,7 +25,18 @@ export class OrderService {
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
     private readonly teamService: TeamService,
-  ) { }
+    private readonly configService: ConfigService,
+  ) {
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.qq.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: this.configService.get<string>('EMAIL_USER'),
+        pass: this.configService.get<string>('EMAIL_PASS'),
+      },
+    });
+  }
 
   async create(userId: number, dto: CreateOrderDto) {
     const { teamId } = await this.teamService.getMyTeam(userId);
@@ -59,7 +73,47 @@ export class OrderService {
     }));
     await this.orderItemRepository.save(orderItems);
 
-    return this.getOrderDetail(savedOrder, orderItems, menus);
+    const detail = this.getOrderDetail(savedOrder, orderItems, menus);
+    if (dto.sendEmail === true && dto.recipientEmail) {
+      void this.sendOrderEmail(detail, dto.recipientEmail);
+    }
+    return detail;
+  }
+
+  private async sendOrderEmail(order: any, recipientEmail: string): Promise<void> {
+    try {
+      const sender = this.configService.get<string>('EMAIL_USER');
+      if (!sender) {
+        this.logger.warn('EMAIL_USER 未配置，跳过投喂订单邮件');
+        return;
+      }
+
+      const itemRows = (order.items || []).map((item: any) => `
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${item.menu?.title || `菜单#${item.menuId}`}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:center;">${item.quantity}</td>
+        </tr>`).join('');
+
+      await this.transporter.sendMail({
+        from: `"前端的日常" <${sender}>`,
+        to: recipientEmail,
+        subject: `新的投喂申请 - ${order.orderNo}`,
+        html: `
+          <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;color:#333;">
+            <h2 style="color:#ff6f95;">收到一份新的投喂申请 💗</h2>
+            <p>订单号：${order.orderNo}</p>
+            <p>申请时间：${new Date(order.createTime).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</p>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr><th style="padding:8px 12px;text-align:left;background:#fff1f4;">菜品</th><th style="padding:8px 12px;background:#fff1f4;">数量</th></tr></thead>
+              <tbody>${itemRows}</tbody>
+            </table>
+            <p style="color:#999;font-size:13px;">此邮件由「前端的日常」自动发送。</p>
+          </div>`,
+      });
+      this.logger.log(`投喂订单邮件已发送至 ${recipientEmail}`);
+    } catch (error) {
+      this.logger.error(`发送投喂订单邮件失败: ${error.message}`);
+    }
   }
 
   async updateStatus(userId: number, id: number, dto: UpdateOrderStatusDto) {
