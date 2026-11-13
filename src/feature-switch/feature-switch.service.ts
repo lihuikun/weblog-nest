@@ -5,13 +5,8 @@ import { UpdateAppFeatureConfigDto } from './dto/update-app-feature-config.dto';
 import { AppFeatureConfig } from './entities/feature-switch.entity';
 
 const DEFAULT_CONFIG: Record<string, unknown> = {
-  plazaHomeCreateMenu: {
-    label: '新增菜单',
-  },
-  plazaMenuAiGenerate: {
-    aiBaseUrl: 'https://ai.lihk180.dpdns.org/ai',
-    rewardAdUnit: 'adunit-13b6a767fe6eceb0',
-  },
+  isAIBtn: true,
+  isAddBtn: true,
 };
 
 @Injectable()
