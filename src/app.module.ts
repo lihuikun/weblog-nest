@@ -36,6 +36,7 @@ import { MenuModule } from './menu/menu.module';
 import { SquareCategoryModule } from './square-category/square-category.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
+import { FeatureSwitchModule } from './feature-switch/feature-switch.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { OrderModule } from './order/order.module';
     SquareCategoryModule,
     CartModule,
     OrderModule,
+    FeatureSwitchModule,
   ],
   controllers: [AppController],
   providers: [
