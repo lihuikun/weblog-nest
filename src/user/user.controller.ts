@@ -8,6 +8,7 @@ import { CreateEmailUserDto } from './dto/create-email-user.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
 import { CreateGithubLoginDto } from './dto/github-login.dto';
 import { CreateGameLoginDto } from './dto/create-game-login.dto';
+import { GameRecordDto } from './dto/game-record.dto';
 import { Pagination, PaginationParams } from '../common/decorators/pagination.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { CurrentUserId } from 'src/common/decorators/require-role.decorator';
@@ -93,6 +94,24 @@ export class UserController {
   @ApiBody({ type: CreateGithubLoginDto })
   async githubLogin(@Body() createGithubLoginDto: CreateGithubLoginDto): Promise<User> {
     return this.authService.githubLogin(createGithubLoginDto);
+  }
+
+  @Get('game-record')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '获取当前用户的小游戏完整存档' })
+  async getGameRecord(@CurrentUserId() userId: number) {
+    return this.authService.getGameRecord(userId);
+  }
+
+  @Put('game-record')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '保存当前用户的小游戏完整存档' })
+  @ApiBody({ type: GameRecordDto })
+  async saveGameRecord(
+    @CurrentUserId() userId: number,
+    @Body() dto: GameRecordDto,
+  ) {
+    return this.authService.updateGameRecord(userId, dto);
   }
 
   @Get('profile')

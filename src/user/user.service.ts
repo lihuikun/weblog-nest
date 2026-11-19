@@ -2,8 +2,10 @@ import { Injectable, ConflictException, UnauthorizedException, Logger, BadReques
 import axios from 'axios';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { GameRecordDto } from './dto/game-record.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, LoginType, Role } from '../user/entities/user.entity';
+import { GameRecord } from './entities/game-record.entity';
 import { Repository, In } from 'typeorm';
 import { CreateWechatLoginDto } from './dto/create-wechat-login.dto';
 import { CreateEmailUserDto } from './dto/create-email-user.dto';
@@ -21,6 +23,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(GameRecord)
+    private readonly gameRecordRepository: Repository<GameRecord>,
     private readonly jwtService: JwtService,
     private readonly verificationService: VerificationService,
     private readonly teamService: TeamService,
@@ -425,6 +429,25 @@ export class UserService {
     Object.assign(user, dto);
     await this.userRepository.save(user);
     return user;
+  }
+
+  /** 读取当前用户的完整游戏存档；无记录返回 null。 */
+  async getGameRecord(userId: number): Promise<Record<string, any> | null> {
+    const record = await this.gameRecordRepository.findOne({ where: { userId } });
+    return record?.data ?? null;
+  }
+
+  /** 整体覆盖当前用户的游戏存档（按 userId 独立存储）。 */
+  async updateGameRecord(userId: number, dto: GameRecordDto): Promise<Record<string, any>> {
+    let record = await this.gameRecordRepository.findOne({ where: { userId } });
+    if (!record) {
+      record = this.gameRecordRepository.create({ userId, data: { ...dto } });
+    } else {
+      record.data = { ...dto };
+    }
+    await this.gameRecordRepository.save(record);
+    this.logger.log(`updateGameRecord | userId=${userId} | keys=${Object.keys(dto).join(',')}`);
+    return record.data;
   }
 
   // 获取用户角色 - 公共方法
